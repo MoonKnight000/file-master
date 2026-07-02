@@ -6,9 +6,49 @@ import org.springframework.stereotype.Component
 import uz.murodjon.filemaster.exception.ConversionFailedException
 import java.nio.file.Path
 
-/** Rotates or splits PDF pages via Apache PDFBox (no external tool needed). */
+/** Rotates, splits, deletes, extracts or reorders PDF pages via Apache PDFBox (no external tool needed). */
 @Component
 class PdfEditor {
+
+    /** Deletes the pages selected by [ranges] ("2,5-7", 1-based), writing the rest to [output]. */
+    fun deletePages(input: Path, ranges: String, output: Path) {
+        Loader.loadPDF(input.toFile()).use { document ->
+            val doomed = selectPages(ranges, document.numberOfPages)
+            if (doomed.size >= document.numberOfPages) {
+                throw ConversionFailedException("Cannot delete every page of the PDF.")
+            }
+            doomed.sortedDescending().forEach { p -> document.removePage(p - 1) }
+            document.save(output.toFile())
+        }
+    }
+
+    /** Copies only the pages selected by [ranges] ("2,5-7", 1-based, in document order) into ONE new PDF. */
+    fun extractPages(input: Path, ranges: String, output: Path) {
+        Loader.loadPDF(input.toFile()).use { document ->
+            val pages = selectPages(ranges, document.numberOfPages)
+            PDDocument().use { part ->
+                pages.forEach { p -> part.importPage(document.getPage(p - 1)) }
+                part.save(output.toFile())
+            }
+        }
+    }
+
+    /** Rewrites the PDF with pages in [order] ("3,1,2") — must be a full permutation of 1..pageCount. */
+    fun reorderPages(input: Path, order: String, output: Path) {
+        Loader.loadPDF(input.toFile()).use { document ->
+            val pageCount = document.numberOfPages
+            val pages = order.split(',').map { token ->
+                token.trim().toIntOrNull() ?: throw ConversionFailedException("Invalid page number: ${token.trim()}")
+            }
+            if (pages.sorted() != (1..pageCount).toList()) {
+                throw ConversionFailedException("Page order must list every page 1..$pageCount exactly once.")
+            }
+            PDDocument().use { reordered ->
+                pages.forEach { p -> reordered.importPage(document.getPage(p - 1)) }
+                reordered.save(output.toFile())
+            }
+        }
+    }
 
     /** Rotates every page of [input] by [degrees] (added to any existing rotation), writing [output]. */
     fun rotate(input: Path, degrees: Int, output: Path) {
@@ -44,6 +84,17 @@ class PdfEditor {
             }
             return outputs
         }
+    }
+
+    /**
+     * Parses a flat `"2,5-7"` selection into a sorted, deduped 1-based page list (delete/extract).
+     * Unlike [parseRanges], a blank spec is an error — these edits require an explicit selection.
+     */
+    private fun selectPages(spec: String, pageCount: Int): List<Int> {
+        if (spec.isBlank()) throw ConversionFailedException("No pages selected.")
+        val pages = parseRanges(spec, pageCount).flatMap { it.second }.distinct().sorted()
+        if (pages.isEmpty()) throw ConversionFailedException("No pages selected.")
+        return pages
     }
 
     /** Parses `"1-3,5"` into (label, 1-based page list) groups, clamped to [pageCount]. */

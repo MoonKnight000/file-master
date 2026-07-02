@@ -109,6 +109,45 @@ class ConversionSupport(
         }
     }
 
+    /**
+     * Standard n->1 loop (merge-pdf/-audio/-videos, zip): downloads every input (index-prefixed
+     * against name collisions), lets [combine] produce ONE output, attaches the result to the
+     * first job file and marks the rest done — mirroring the merge-pdf flow.
+     */
+    fun combineAll(job: ConversionJob, workDir: Path, combine: (inputs: List<Path>) -> Path) {
+        try {
+            val inputs = job.files.mapIndexed { i, jobFile ->
+                val upload = jobFile.upload
+                val path = workDir.resolve("$i-${upload.originalName}")
+                storage.download(upload.absolutePath, path)
+                jobFile.status = JobStatus.PROCESSING
+                jobFile.progress = 50
+                path
+            }
+            saveAndEmitProgress(job)
+
+            val produced = combine(inputs)
+            val result = storeResult(job, produced)
+
+            job.files.forEachIndexed { i, jobFile ->
+                jobFile.status = JobStatus.DONE
+                jobFile.progress = 100
+                if (i == 0) {
+                    jobFile.name = result.originalName
+                    jobFile.result = result
+                    jobFile.bytes = result.bytes
+                }
+            }
+            job.status = JobStatus.DONE
+            job.progress = 100
+            jobs.save(job)
+            emitDone(job)
+        } catch (ex: Exception) {
+            log.warn("Merge failed for job {}: {}", job.id, ex.message)
+            failJob(job, ex.message?.take(500) ?: "Merge failed.")
+        }
+    }
+
     /** Uploads the produced file to storage and persists a RESULT [StoredFile]. */
     fun storeResult(
         job: ConversionJob,

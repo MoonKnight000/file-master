@@ -26,7 +26,19 @@ class DocumentConversionServiceImpl(
 
         val o = request.options
         mediaValidator.validatePdfEdit(
-            ConversionOptions(rotateDegrees = o?.rotateDegrees, splitRanges = o?.splitRanges),
+            ConversionOptions(
+                rotateDegrees = o?.rotateDegrees,
+                splitRanges = o?.splitRanges,
+                pageRanges = o?.pageRanges,
+                pageOrder = o?.pageOrder,
+                watermarkText = o?.watermarkText,
+                watermarkPosition = o?.watermarkPosition,
+                watermarkOpacity = o?.watermarkOpacity,
+                watermarkFontSize = o?.watermarkFontSize,
+                pageNumberPosition = o?.pageNumberPosition,
+                password = o?.password,
+            ),
+            tool.editOperation,
         )
         mediaValidator.validateOcr(ConversionOptions(ocrLanguage = o?.ocrLanguage))
 
@@ -42,6 +54,14 @@ class DocumentConversionServiceImpl(
             splitRanges = o?.splitRanges,
             compress = o?.compress ?: false,
             ocrLanguage = o?.ocrLanguage,
+            pageRanges = o?.pageRanges,
+            pageOrder = o?.pageOrder,
+            watermarkText = o?.watermarkText,
+            watermarkPosition = o?.watermarkPosition,
+            watermarkOpacity = o?.watermarkOpacity,
+            watermarkFontSize = o?.watermarkFontSize,
+            pageNumberPosition = o?.pageNumberPosition,
+            password = o?.password,
         )
         return conversion.submit(job, sources)
     }

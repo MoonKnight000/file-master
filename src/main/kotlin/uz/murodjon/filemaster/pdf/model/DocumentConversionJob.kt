@@ -25,6 +25,15 @@ class DocumentConversionJob(
     var splitRanges: String? = null,
     var compress: Boolean = false,
     var ocrLanguage: String? = null,
+    var pageRanges: String? = null,
+    var pageOrder: String? = null,
+    var watermarkText: String? = null,
+    var watermarkPosition: String? = null,
+    var watermarkOpacity: Double? = null,
+    var watermarkFontSize: Int? = null,
+    var pageNumberPosition: String? = null,
+    /** protect/unlock password. The worker nulls it out once the job finishes; never log the job. */
+    var password: String? = null,
 ) : ConversionJob(user, tool, outputFormat, quality, keepOriginal, mergeIntoOne) {
 
     override fun toSettings(): ConversionSettings = super.toSettings().copy(
@@ -32,5 +41,13 @@ class DocumentConversionJob(
         splitRanges = splitRanges,
         compress = compress,
         ocrLanguage = ocrLanguage,
+        pageRanges = pageRanges,
+        pageOrder = pageOrder,
+        watermarkText = watermarkText,
+        watermarkPosition = watermarkPosition,
+        watermarkOpacity = watermarkOpacity,
+        watermarkFontSize = watermarkFontSize,
+        pageNumberPosition = pageNumberPosition,
+        password = password,
     )
 }

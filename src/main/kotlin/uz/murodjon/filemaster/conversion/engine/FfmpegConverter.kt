@@ -49,13 +49,14 @@ class FfmpegConverter(
         if (duration != null && duration > 0) command += listOf("-t", trimValue(duration))
 
         when {
-            targetExt in audioExts -> applyAudio(command, settings, withDefaultBitrate = true)
+            targetExt == "gif" -> applyGif(command, settings)
+            targetExt in audioExts -> applyAudio(command, settings, withDefaultBitrate = true, input = input)
             targetExt in videoExts -> {
                 applyVideo(command, settings)
                 if (settings.muteAudio) {
                     command += "-an"
                 } else {
-                    applyAudio(command, settings, withDefaultBitrate = false) // the video's audio track
+                    applyAudio(command, settings, withDefaultBitrate = false, input = input) // the video's audio track
                 }
             }
             targetExt in imageExts -> applyImage(command, settings, targetExt)
@@ -70,14 +71,24 @@ class FfmpegConverter(
         return output
     }
 
-    private fun applyAudio(command: MutableList<String>, settings: ConversionSettings, withDefaultBitrate: Boolean) {
+    private fun applyAudio(command: MutableList<String>, settings: ConversionSettings, withDefaultBitrate: Boolean, input: Path) {
         val bitrate = settings.audioBitrateKbps ?: if (withDefaultBitrate) defaultBitrateKbps(settings.quality) else null
         bitrate?.let { command += listOf("-b:a", "${it}k") }
         settings.audioSampleRate?.let { command += listOf("-ar", it.toString()) }
         settings.audioChannels?.let { command += listOf("-ac", it.toString()) }
-        // Build audio filter chain: volume and/or loudnorm.
+        // Audio filter chain: volume → reverse → fades → tempo → loudnorm.
         val filters = buildList {
             settings.audioVolume?.takeIf { it != 1.0 }?.let { add("volume=$it") }
+            if (settings.reverseAudio) add("areverse")
+            settings.fadeInSeconds?.takeIf { it > 0 }?.let { add("afade=t=in:st=0:d=${trimValue(it)}") }
+            settings.fadeOutSeconds?.takeIf { it > 0 }?.let { fade ->
+                // afade t=out needs an absolute start time — derive it from the (trimmed) duration.
+                effectiveDuration(input, settings)?.let { dur ->
+                    val start = (dur - fade).coerceAtLeast(0.0)
+                    add("afade=t=out:st=${trimValue(start)}:d=${trimValue(fade)}")
+                }
+            }
+            settings.speedFactor?.takeIf { it != 1.0 }?.let { addAll(atempoChain(it)) }
             if (settings.audioNormalize) add("loudnorm")
         }
         if (filters.isNotEmpty()) command += listOf("-af", filters.joinToString(","))
@@ -86,12 +97,88 @@ class FfmpegConverter(
     private fun applyVideo(command: MutableList<String>, settings: ConversionSettings) {
         settings.videoCodec?.let { command += listOf("-c:v", codecArg(it)) }
         settings.videoBitrateKbps?.let { command += listOf("-b:v", "${it}k") }
-        // Scale to the requested height, keeping aspect ratio (width rounded to an even number).
-        settings.videoResolution?.let { res ->
-            heightOf(res)?.let { h -> command += listOf("-vf", "scale=-2:$h") }
+        // Video filter chain: crop → rotate → flip → scale → speed → watermark.
+        val filters = buildList {
+            if (settings.cropWidth != null && settings.cropHeight != null) {
+                add("crop=${settings.cropWidth}:${settings.cropHeight}:${settings.cropX ?: 0}:${settings.cropY ?: 0}")
+            }
+            when (((settings.rotateDegrees ?: 0) % 360 + 360) % 360) {
+                90 -> add("transpose=1")
+                180 -> { add("hflip"); add("vflip") }
+                270 -> add("transpose=2")
+            }
+            when (settings.flipDirection) {
+                "horizontal" -> add("hflip")
+                "vertical" -> add("vflip")
+            }
+            settings.videoResolution?.let { res -> heightOf(res)?.let { h -> add("scale=-2:$h") } }
+            settings.speedFactor?.takeIf { it != 1.0 }?.let { add("setpts=PTS/${trimValue(it)}") }
+            settings.watermarkText?.takeIf { it.isNotBlank() }?.let { text ->
+                add(drawtextFilter(text, settings.watermarkPosition ?: "bottom-right",
+                    settings.watermarkOpacity ?: 0.5, settings.watermarkFontSize ?: 48))
+            }
         }
+        if (filters.isNotEmpty()) command += listOf("-vf", filters.joinToString(","))
         settings.videoFps?.let { command += listOf("-r", it.toString()) }
     }
+
+    /** Animated GIF via the palettegen/paletteuse pair (much better colors than the default). */
+    private fun applyGif(command: MutableList<String>, settings: ConversionSettings) {
+        val fps = settings.videoFps ?: 12
+        val height = settings.videoResolution?.let { heightOf(it) } ?: 480
+        command += listOf(
+            "-filter_complex",
+            "[0:v]fps=$fps,scale=-2:$height:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+            "-loop", "0",
+        )
+    }
+
+    /**
+     * ffmpeg's atempo only accepts 0.5..2 per instance — chain instances to cover 0.25..4
+     * (e.g. 4x = atempo=2,atempo=2; 0.25x = atempo=0.5,atempo=0.5).
+     */
+    private fun atempoChain(factor: Double): List<String> {
+        val chain = mutableListOf<String>()
+        var remaining = factor.coerceIn(0.25, 4.0)
+        while (remaining > 2.0) { chain += "atempo=2.0"; remaining /= 2.0 }
+        while (remaining < 0.5) { chain += "atempo=0.5"; remaining /= 0.5 }
+        if (remaining != 1.0) chain += "atempo=${trimValue(remaining)}"
+        return chain
+    }
+
+    /** drawtext overlay. "diagonal" (a PDF/image position) falls back to center — drawtext cannot rotate. */
+    private fun drawtextFilter(text: String, position: String, opacity: Double, fontSize: Int): String {
+        // Keep the filter spec parseable: strip the characters drawtext treats specially.
+        val safe = text.replace(Regex("""[\\'":;%,\[\]=]"""), " ").trim()
+        val (x, y) = when (position) {
+            "top-left" -> "24" to "24"
+            "top-right" -> "w-tw-24" to "24"
+            "bottom-left" -> "24" to "h-th-24"
+            "bottom-right" -> "w-tw-24" to "h-th-24"
+            else -> "(w-tw)/2" to "(h-th)/2" // center / diagonal
+        }
+        val alpha = opacity.coerceIn(0.0, 1.0)
+        // font= resolves through fontconfig — a fontfile= path would need filter-level colon escaping.
+        return "drawtext=font=Arial:text=$safe:x=$x:y=$y" +
+            ":fontsize=$fontSize:fontcolor=white@$alpha:borderw=2:bordercolor=black@${trimValue(alpha * 0.6)}"
+    }
+
+    /** The output duration after trimming (null when ffprobe can't tell — fade-out is skipped then). */
+    private fun effectiveDuration(input: Path, settings: ConversionSettings): Double? {
+        val total = probeDurationSeconds(input) ?: return null
+        val start = (settings.trimStartSeconds ?: 0.0).coerceIn(0.0, total)
+        val end = (settings.trimEndSeconds ?: total).coerceIn(start, total)
+        return end - start
+    }
+
+    /** Media duration in seconds via ffprobe (sits next to ffmpeg). Null on any failure. */
+    private fun probeDurationSeconds(input: Path): Double? = runCatching {
+        runner.run(
+            listOf(ffprobePath(props.tools.ffmpegPath), "-v", "error",
+                "-show_entries", "format=duration", "-of", "csv=p=0", input.toString()),
+            30,
+        ).trim().toDouble()
+    }.getOrNull()
 
     private fun applyImage(command: MutableList<String>, settings: ConversionSettings, targetExt: String) {
         val w = settings.imageWidth
@@ -119,4 +206,15 @@ class FfmpegConverter(
     /** ffmpeg accepts plain seconds; trim whitespace and avoid scientific notation. */
     private fun trimValue(seconds: Double): String =
         if (seconds == seconds.toLong().toDouble()) seconds.toLong().toString() else seconds.toString()
+
+    companion object {
+        /**
+         * ffprobe sits next to ffmpeg — swap only the FILE NAME. A plain `path.replace("ffmpeg",
+         * "ffprobe")` would also rewrite a directory named ffmpeg (e.g. `C:/Program Files/ffmpeg/bin/`).
+         */
+        fun ffprobePath(ffmpegPath: String): String {
+            val p = java.nio.file.Paths.get(ffmpegPath)
+            return (p.parent?.resolve(p.fileName.toString().replace("ffmpeg", "ffprobe")) ?: p).toString()
+        }
+    }
 }

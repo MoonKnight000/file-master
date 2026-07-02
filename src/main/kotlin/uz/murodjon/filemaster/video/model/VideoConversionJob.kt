@@ -35,6 +35,17 @@ class VideoConversionJob(
     var audioNormalize: Boolean = false,
     var trimStartSeconds: Double? = null,
     var trimEndSeconds: Double? = null,
+    var speedFactor: Double? = null,
+    var rotateDegrees: Int? = null,
+    var flipDirection: String? = null,
+    var cropX: Int? = null,
+    var cropY: Int? = null,
+    var cropWidth: Int? = null,
+    var cropHeight: Int? = null,
+    var watermarkText: String? = null,
+    var watermarkPosition: String? = null,
+    var watermarkOpacity: Double? = null,
+    var watermarkFontSize: Int? = null,
 ) : ConversionJob(user, tool, outputFormat, quality, keepOriginal, mergeIntoOne) {
 
     override fun toSettings(): ConversionSettings = super.toSettings().copy(
@@ -50,5 +61,16 @@ class VideoConversionJob(
         audioNormalize = audioNormalize,
         trimStartSeconds = trimStartSeconds,
         trimEndSeconds = trimEndSeconds,
+        speedFactor = speedFactor,
+        rotateDegrees = rotateDegrees,
+        flipDirection = flipDirection,
+        cropX = cropX,
+        cropY = cropY,
+        cropWidth = cropWidth,
+        cropHeight = cropHeight,
+        watermarkText = watermarkText,
+        watermarkPosition = watermarkPosition,
+        watermarkOpacity = watermarkOpacity,
+        watermarkFontSize = watermarkFontSize,
     )
 }

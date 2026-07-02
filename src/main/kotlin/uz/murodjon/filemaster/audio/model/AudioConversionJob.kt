@@ -29,6 +29,10 @@ class AudioConversionJob(
     var audioNormalize: Boolean = false,
     var trimStartSeconds: Double? = null,
     var trimEndSeconds: Double? = null,
+    var speedFactor: Double? = null,
+    var fadeInSeconds: Double? = null,
+    var fadeOutSeconds: Double? = null,
+    var reverseAudio: Boolean = false,
 ) : ConversionJob(user, tool, outputFormat, quality, keepOriginal, mergeIntoOne) {
 
     override fun toSettings(): ConversionSettings = super.toSettings().copy(
@@ -39,5 +43,9 @@ class AudioConversionJob(
         audioNormalize = audioNormalize,
         trimStartSeconds = trimStartSeconds,
         trimEndSeconds = trimEndSeconds,
+        speedFactor = speedFactor,
+        fadeInSeconds = fadeInSeconds,
+        fadeOutSeconds = fadeOutSeconds,
+        reverseAudio = reverseAudio,
     )
 }

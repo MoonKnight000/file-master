@@ -6,6 +6,9 @@ import uz.murodjon.filemaster.common.Quality
  * Everything a [Converter] may need beyond the input/output format. [quality] applies to
  * every engine; the rest are audio/media knobs only ffmpeg uses (null = leave to the
  * engine default / derive from quality).
+ *
+ * SECURITY: [password] is part of this data class — never log a whole settings (or job)
+ * instance, its `toString()` would leak the password.
  */
 data class ConversionSettings(
     val quality: Quality,
@@ -37,4 +40,31 @@ data class ConversionSettings(
     val targetBytes: Long? = null,
     // OCR: Tesseract language code(s), e.g. "eng", "rus+uzb". null = tesseract default (eng).
     val ocrLanguage: String? = null,
+    // PDF page edits. pageRanges is a flat selection ("2,5-7") producing ONE output —
+    // unlike splitRanges, which groups pages into MULTIPLE output PDFs.
+    val pageRanges: String? = null,      // delete-pdf-pages / extract-pdf-pages
+    val pageOrder: String? = null,       // reorder-pdf-pages: "3,1,2" — full permutation of 1..N
+    // Stamp overlays (watermark-pdf / watermark-image / page-numbers-pdf).
+    val watermarkText: String? = null,
+    val watermarkPosition: String? = null, // catalog vocabulary; "diagonal" = 45° across the center
+    val watermarkOpacity: Double? = null,  // 0.05..1.0
+    val watermarkFontSize: Int? = null,    // 6..144
+    val pageNumberPosition: String? = null,
+    // PDF security (protect: the password to set; unlock: the current open password). NEVER log.
+    val password: String? = null,
+    // Image edits.
+    val cropX: Int? = null,
+    val cropY: Int? = null,
+    val cropWidth: Int? = null,
+    val cropHeight: Int? = null,
+    val flipDirection: String? = null,   // "horizontal" | "vertical"
+    val imageFilter: String? = null,     // grayscale | sepia | invert | blur | sharpen
+    val brightness: Int? = null,         // -100..100
+    val contrast: Int? = null,           // -100..100
+    val saturation: Int? = null,         // -100..100
+    // Audio/video edits (ffmpeg).
+    val speedFactor: Double? = null,     // playback rate 0.25..4 (setpts + atempo)
+    val fadeInSeconds: Double? = null,   // afade t=in
+    val fadeOutSeconds: Double? = null,  // afade t=out (needs the input duration — ffprobe)
+    val reverseAudio: Boolean = false,   // areverse
 )

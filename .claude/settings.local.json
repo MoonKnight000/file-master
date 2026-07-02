@@ -44,7 +44,30 @@
       "Bash(./gradlew compileKotlin compileTestKotlin)",
       "Bash(./gradlew assemble *)",
       "Bash(grep -v \"^$\")",
-      "Bash(grep -v \"ToolSeeder\\\\|//\\\\|ToolDef\\\\|description\\\\|name\\\\|title\")"
+      "Bash(grep -v \"ToolSeeder\\\\|//\\\\|ToolDef\\\\|description\\\\|name\\\\|title\")",
+      "Bash(curl -s -m 3 http://localhost:7788/actuator/health)",
+      "Bash(netstat -ano)",
+      "Read(//c/Users/SURFAC~1/AppData/Local/Temp/claude/C--Users-Surface-PC-IdeaProjects-file-master/5f73d35c-488e-4df0-90c2-bea3327ba5bb/scratchpad/**)",
+      "Bash(curl -s -X POST http://localhost:7788/v1/files -H 'Authorization: Bearer __TRACKED_VAR__' -F 'files=@test.pdf;type=application/pdf' -F 'files=@test.jpg;type=image/jpeg' -o upload.json)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(curl -s -X POST http://localhost:7788/v1/files -H 'Authorization: Bearer __TRACKED_VAR__' -F 'files=@test.jpg;type=image/jpeg' -F 'files=@test.jpg;type=image/jpeg')",
+      "Bash(curl -s http://localhost:7788/v1/conversions/1 -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\(d['status'], [\\(f['resultId'], f['name']\\) for f in d['files']]\\)\")",
+      "Bash(bash test-edits.sh)",
+      "Bash(curl -s http://localhost:7788/v1/conversions/9 -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(python -m json.tool)",
+      "Bash(taskkill //PID 8052 //F)",
+      "Read(//tmp/**)",
+      "Bash(break)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\('wrong password:', d['status']\\)\")",
+      "Bash(export PGPASSWORD=9654)",
+      "Bash(psql -h localhost -U postgres -d filemaster -t -c \"SELECT id, password IS NULL AS password_cleared FROM document_conversion_jobs WHERE id IN \\(7,13,14\\);\")",
+      "Bash(./gradlew compileTestKotlin assemble -q)",
+      "Bash(bash test-edits2.sh)",
+      "Bash(\"/c/Program Files/ffmpeg/bin/ffmpeg.exe\" -y -i test1.mp4 -vf 'drawtext=fontfile=C\\\\:/Windows/Fonts/arial.ttf:text=FILE MASTER:x=w-tw-24:y=h-th-24:fontsize=24:fontcolor=white@0.6:borderw=2:bordercolor=black@0.36' out-wm.mp4)",
+      "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; $out = & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -vf 'drawtext=fontfile=C\\\\:/Windows/Fonts/arial.ttf:text=FILE MASTER:x=w-tw-24:y=h-th-24:fontsize=24:fontcolor=white@0.6:borderw=2:bordercolor=black@0.36' out-wm.mp4 2>&1 | Out-String; $out.Substring\\([Math]::Max\\(0,$out.Length-900\\)\\))",
+      "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -vf 'drawtext=font=Arial:text=FILE MASTER:x=w-tw-24:y=h-th-24:fontsize=24:fontcolor=white@0.6:borderw=2:bordercolor=black@0.36' out-wm.mp4 2>$null; if \\(Test-Path out-wm.mp4\\) { \"WATERMARK OK: \" + \\(Get-Item out-wm.mp4\\).Length } else { \"WATERMARK FAILED\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; $out = & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -i test2.mp4 -filter_complex \"[0:v]scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:\\(ow-iw\\)/2:\\(oh-ih\\)/2,setsar=1,fps=30[v0];[1:v]scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:\\(ow-iw\\)/2:\\(oh-ih\\)/2,setsar=1,fps=30[v1];[v0][0:a][v1][1:a]concat=n=2:v=1:a=1[v][a]\" -map \"[v]\" -map \"[a]\" out-merged.mp4 2>&1 | Out-String; if \\(Test-Path out-merged.mp4\\) { \"MERGE OK: \" + \\(Get-Item out-merged.mp4\\).Length } else { \"MERGE FAILED\"; $out.Substring\\([Math]::Max\\(0,$out.Length-700\\)\\) })"
     ]
   }
 }

@@ -31,6 +31,9 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("io.minio:minio:8.5.17")
     implementation("org.apache.pdfbox:pdfbox:3.0.7")
+    // PDFBox standard security handler (protect/unlock PDF) needs BouncyCastle at runtime.
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")

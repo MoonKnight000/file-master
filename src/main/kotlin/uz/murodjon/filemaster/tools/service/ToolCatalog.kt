@@ -25,6 +25,26 @@ class ToolCatalog {
     // Tesseract language codes. Add more as traineddata files are installed.
     private val ocrLanguages = listOf("eng", "rus", "uzb", "uzb_cyrl")
 
+    // Edit-tool vocabularies (watermark / page numbers / flip / filters).
+    private val watermarkPositions = listOf("top-left", "top-right", "center", "bottom-left", "bottom-right", "diagonal")
+    private val pageNumberPositions = listOf("top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right")
+    private val flipDirections = listOf("horizontal", "vertical")
+    private val imageFilters = listOf("grayscale", "sepia", "invert", "blur", "sharpen")
+    private val minWatermarkOpacity = 0.05
+    private val maxWatermarkOpacity = 1.0
+    private val minWatermarkFontSize = 6
+    private val maxWatermarkFontSize = 144
+    private val maxWatermarkTextLength = 100
+    private val minAdjust = -100
+    private val maxAdjust = 100
+    private val minPasswordLength = 4
+    private val maxPasswordLength = 128
+    private val minSpeedFactor = 0.25
+    private val maxSpeedFactor = 4.0
+    private val minAudioVolume = 0.0
+    private val maxAudioVolume = 4.0
+    private val maxFadeSeconds = 300.0
+
     /** Which video codecs each output container (format) accepts. Keys are UPPERCASE formats. */
     private val videoCodecsByFormat = mapOf(
         "MP4" to listOf("h264", "h265"),
@@ -53,4 +73,23 @@ class ToolCatalog {
     fun minImageQuality(): Int = minImageQuality
     fun maxImageQuality(): Int = maxImageQuality
     fun ocrLanguages(): List<String> = ocrLanguages
+
+    fun watermarkPositions(): List<String> = watermarkPositions
+    fun pageNumberPositions(): List<String> = pageNumberPositions
+    fun flipDirections(): List<String> = flipDirections
+    fun imageFilters(): List<String> = imageFilters
+    fun minWatermarkOpacity(): Double = minWatermarkOpacity
+    fun maxWatermarkOpacity(): Double = maxWatermarkOpacity
+    fun minWatermarkFontSize(): Int = minWatermarkFontSize
+    fun maxWatermarkFontSize(): Int = maxWatermarkFontSize
+    fun maxWatermarkTextLength(): Int = maxWatermarkTextLength
+    fun minAdjust(): Int = minAdjust
+    fun maxAdjust(): Int = maxAdjust
+    fun minPasswordLength(): Int = minPasswordLength
+    fun maxPasswordLength(): Int = maxPasswordLength
+    fun minSpeedFactor(): Double = minSpeedFactor
+    fun maxSpeedFactor(): Double = maxSpeedFactor
+    fun minAudioVolume(): Double = minAudioVolume
+    fun maxAudioVolume(): Double = maxAudioVolume
+    fun maxFadeSeconds(): Double = maxFadeSeconds
 }

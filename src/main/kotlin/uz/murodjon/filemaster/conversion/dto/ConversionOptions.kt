@@ -34,4 +34,29 @@ data class ConversionOptions(
     val targetBytes: Long? = null,
     // OCR language code(s) e.g. "eng", "rus", "uzb".
     val ocrLanguage: String? = null,
+    // PDF page edits (delete/extract: flat "2,5-7" selection, ONE output; reorder: "3,1,2").
+    val pageRanges: String? = null,
+    val pageOrder: String? = null,
+    // Stamp overlays (watermark-pdf/-image, page-numbers-pdf).
+    val watermarkText: String? = null,
+    val watermarkPosition: String? = null,
+    val watermarkOpacity: Double? = null,
+    val watermarkFontSize: Int? = null,
+    val pageNumberPosition: String? = null,
+    // PDF security (protect/unlock). Never echo in validation messages or logs.
+    val password: String? = null,
+    // Image edits.
+    val cropX: Int? = null,
+    val cropY: Int? = null,
+    val cropWidth: Int? = null,
+    val cropHeight: Int? = null,
+    val flipDirection: String? = null,
+    val imageFilter: String? = null,
+    val brightness: Int? = null,
+    val contrast: Int? = null,
+    val saturation: Int? = null,
+    // Audio/video edits.
+    val speedFactor: Double? = null,
+    val fadeInSeconds: Double? = null,
+    val fadeOutSeconds: Double? = null,
 )

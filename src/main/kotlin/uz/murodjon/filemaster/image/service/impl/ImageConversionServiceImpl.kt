@@ -33,7 +33,21 @@ class ImageConversionServiceImpl(
                 imageQuality = o?.imageQuality,
                 targetBytes = o?.targetBytes,
                 rotateDegrees = o?.rotateDegrees,
+                cropX = o?.cropX,
+                cropY = o?.cropY,
+                cropWidth = o?.cropWidth,
+                cropHeight = o?.cropHeight,
+                flipDirection = o?.flipDirection,
+                imageFilter = o?.imageFilter,
+                brightness = o?.brightness,
+                contrast = o?.contrast,
+                saturation = o?.saturation,
+                watermarkText = o?.watermarkText,
+                watermarkPosition = o?.watermarkPosition,
+                watermarkOpacity = o?.watermarkOpacity,
+                watermarkFontSize = o?.watermarkFontSize,
             ),
+            tool.editOperation,
         )
 
         val format = validator.resolveOutputFormat(tool, o?.outputFormat)
@@ -49,6 +63,19 @@ class ImageConversionServiceImpl(
             imageQuality = o?.imageQuality,
             targetBytes = o?.targetBytes,
             rotateDegrees = o?.rotateDegrees,
+            cropX = o?.cropX,
+            cropY = o?.cropY,
+            cropWidth = o?.cropWidth,
+            cropHeight = o?.cropHeight,
+            flipDirection = o?.flipDirection,
+            imageFilter = o?.imageFilter,
+            brightness = o?.brightness,
+            contrast = o?.contrast,
+            saturation = o?.saturation,
+            watermarkText = o?.watermarkText,
+            watermarkPosition = o?.watermarkPosition,
+            watermarkOpacity = o?.watermarkOpacity,
+            watermarkFontSize = o?.watermarkFontSize,
         )
         return conversion.submit(job, sources)
     }

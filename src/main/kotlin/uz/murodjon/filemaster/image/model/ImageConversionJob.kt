@@ -26,6 +26,19 @@ class ImageConversionJob(
     var imageQuality: Int? = null,
     var targetBytes: Long? = null,
     var rotateDegrees: Int? = null,
+    var cropX: Int? = null,
+    var cropY: Int? = null,
+    var cropWidth: Int? = null,
+    var cropHeight: Int? = null,
+    var flipDirection: String? = null,
+    var imageFilter: String? = null,
+    var brightness: Int? = null,
+    var contrast: Int? = null,
+    var saturation: Int? = null,
+    var watermarkText: String? = null,
+    var watermarkPosition: String? = null,
+    var watermarkOpacity: Double? = null,
+    var watermarkFontSize: Int? = null,
 ) : ConversionJob(user, tool, outputFormat, quality, keepOriginal, mergeIntoOne) {
 
     override fun toSettings(): ConversionSettings = super.toSettings().copy(
@@ -34,5 +47,18 @@ class ImageConversionJob(
         imageQuality = imageQuality,
         targetBytes = targetBytes,
         rotateDegrees = rotateDegrees,
+        cropX = cropX,
+        cropY = cropY,
+        cropWidth = cropWidth,
+        cropHeight = cropHeight,
+        flipDirection = flipDirection,
+        imageFilter = imageFilter,
+        brightness = brightness,
+        contrast = contrast,
+        saturation = saturation,
+        watermarkText = watermarkText,
+        watermarkPosition = watermarkPosition,
+        watermarkOpacity = watermarkOpacity,
+        watermarkFontSize = watermarkFontSize,
     )
 }

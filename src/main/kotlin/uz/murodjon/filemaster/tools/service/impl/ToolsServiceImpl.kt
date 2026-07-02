@@ -75,10 +75,41 @@ class ToolsServiceImpl(
                     null
                 },
                 edit = tool.editOperation?.let { op ->
-                    EditOptions(
-                        operation = op,
-                        angles = if (op == EditOperation.ROTATE) listOf(90, 180, 270) else null,
-                    )
+                    when (op) {
+                        EditOperation.ROTATE -> EditOptions(op, angles = listOf(90, 180, 270))
+                        EditOperation.WATERMARK -> EditOptions(
+                            op,
+                            positions = catalog.watermarkPositions(),
+                            opacityMin = catalog.minWatermarkOpacity(),
+                            opacityMax = catalog.maxWatermarkOpacity(),
+                            fontSizeMin = catalog.minWatermarkFontSize(),
+                            fontSizeMax = catalog.maxWatermarkFontSize(),
+                            maxTextLength = catalog.maxWatermarkTextLength(),
+                        )
+                        EditOperation.PAGE_NUMBERS -> EditOptions(op, positions = catalog.pageNumberPositions())
+                        EditOperation.FLIP -> EditOptions(op, flipDirections = catalog.flipDirections())
+                        EditOperation.FILTER -> EditOptions(op, filters = catalog.imageFilters())
+                        EditOperation.ADJUST -> EditOptions(op, adjustMin = catalog.minAdjust(), adjustMax = catalog.maxAdjust())
+                        EditOperation.PROTECT -> EditOptions(
+                            op,
+                            passwordMinLength = catalog.minPasswordLength(),
+                            passwordMaxLength = catalog.maxPasswordLength(),
+                        )
+                        EditOperation.SPEED -> EditOptions(
+                            op,
+                            speedMin = catalog.minSpeedFactor(),
+                            speedMax = catalog.maxSpeedFactor(),
+                        )
+                        EditOperation.VOLUME -> EditOptions(
+                            op,
+                            volumeMin = catalog.minAudioVolume(),
+                            volumeMax = catalog.maxAudioVolume(),
+                        )
+                        EditOperation.FADE -> EditOptions(op, fadeMaxSeconds = catalog.maxFadeSeconds())
+                        // TRIM / SPLIT / RESIZE / DELETE_PAGES / EXTRACT_PAGES / REORDER_PAGES / UNLOCK /
+                        // MUTE / REVERSE / NORMALIZE: the operation alone tells the front-end what to render.
+                        else -> EditOptions(op)
+                    }
                 },
                 ocrLanguages = if (tool.kind == ToolKind.OCR) catalog.ocrLanguages() else null,
             ),

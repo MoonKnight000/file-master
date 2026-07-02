@@ -10,6 +10,7 @@ import uz.murodjon.filemaster.conversion.service.ConversionService
 import uz.murodjon.filemaster.conversion.service.ConversionValidator
 import uz.murodjon.filemaster.conversion.service.MediaValidator
 import uz.murodjon.filemaster.common.Quality
+import uz.murodjon.filemaster.tools.enums.EditOperation
 import uz.murodjon.filemaster.tools.enums.ToolGroup
 import uz.murodjon.filemaster.tools.enums.ToolSlug
 
@@ -34,7 +35,11 @@ class AudioConversionServiceImpl(
                 audioNormalize = o?.audioNormalize,
                 trimStartSeconds = o?.trimStartSeconds,
                 trimEndSeconds = o?.trimEndSeconds,
+                speedFactor = o?.speedFactor,
+                fadeInSeconds = o?.fadeInSeconds,
+                fadeOutSeconds = o?.fadeOutSeconds,
             ),
+            tool.editOperation,
         )
 
         val format = validator.resolveOutputFormat(tool, o?.outputFormat)
@@ -49,9 +54,14 @@ class AudioConversionServiceImpl(
             audioSampleRate = o?.audioSampleRate,
             audioChannels = o?.audioChannels,
             audioVolume = o?.audioVolume,
-            audioNormalize = o?.audioNormalize ?: false,
+            // normalize-audio / reverse-audio need no knobs — the tool itself implies the effect.
+            audioNormalize = o?.audioNormalize ?: (tool.editOperation == EditOperation.NORMALIZE),
             trimStartSeconds = o?.trimStartSeconds,
             trimEndSeconds = o?.trimEndSeconds,
+            speedFactor = o?.speedFactor,
+            fadeInSeconds = o?.fadeInSeconds,
+            fadeOutSeconds = o?.fadeOutSeconds,
+            reverseAudio = tool.editOperation == EditOperation.REVERSE,
         )
         return conversion.submit(job, sources)
     }

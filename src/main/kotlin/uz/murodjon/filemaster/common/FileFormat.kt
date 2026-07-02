@@ -20,6 +20,7 @@ enum class FileFormat(@get:JsonValue val value: String) {
     PNG("PNG"),
     WEBP("WEBP"),
     BMP("BMP"),
+    GIF("GIF"),
     // Audio
     MP3("MP3"),
     WAV("WAV"),

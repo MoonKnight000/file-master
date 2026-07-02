@@ -16,9 +16,9 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** Image compression / conversion (jpg, png) via pure-Java ImageIO — no external tool needed. */
+/** Image compression / conversion / editing (jpg, png) via pure-Java ImageIO — no external tool needed. */
 @Component
-class ImageConverter : Converter {
+class ImageConverter(private val editor: ImageEditor) : Converter {
 
     override fun convert(input: Path, outputFormat: String, settings: ConversionSettings, workDir: Path): Path {
         val targetExt = outputFormat.lowercase().let { if (it == "jpeg") "jpg" else it }
@@ -27,8 +27,22 @@ class ImageConverter : Converter {
 
         val source = ImageIO.read(input.toFile())
             ?: throw ConversionFailedException("Could not read image: ${input.fileName}")
-        val resized = resize(source, settings.imageWidth, settings.imageHeight)
-        val image = rotate(resized, settings.rotateDegrees)
+        // Edit chain: crop first (coordinates refer to the original), watermark last (undistorted).
+        var image = source
+        if (settings.cropWidth != null && settings.cropHeight != null) {
+            image = editor.crop(image, settings.cropX ?: 0, settings.cropY ?: 0, settings.cropWidth, settings.cropHeight)
+        }
+        image = resize(image, settings.imageWidth, settings.imageHeight)
+        image = rotate(image, settings.rotateDegrees)
+        settings.flipDirection?.let { image = editor.flip(image, it) }
+        settings.imageFilter?.let { image = editor.applyFilter(image, it) }
+        if (settings.brightness != null || settings.contrast != null || settings.saturation != null) {
+            image = editor.adjust(image, settings.brightness, settings.contrast, settings.saturation)
+        }
+        settings.watermarkText?.takeIf { it.isNotBlank() }?.let { text ->
+            image = editor.watermark(image, text, settings.watermarkPosition ?: "diagonal",
+                settings.watermarkOpacity ?: 0.3, settings.watermarkFontSize ?: 48)
+        }
 
         if (targetExt == "jpg") {
             val flat = flatten(image)

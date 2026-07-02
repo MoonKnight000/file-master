@@ -10,8 +10,11 @@ import uz.murodjon.filemaster.conversion.engine.LibreOfficeConverter
 import uz.murodjon.filemaster.conversion.engine.PdfEditor
 import uz.murodjon.filemaster.conversion.engine.PdfMerger
 import uz.murodjon.filemaster.conversion.engine.PdfRasterizer
+import uz.murodjon.filemaster.conversion.engine.PdfSecurity
+import uz.murodjon.filemaster.conversion.engine.PdfStamper
 import uz.murodjon.filemaster.conversion.engine.TesseractConverter
 import uz.murodjon.filemaster.conversion.model.ConversionJob
+import uz.murodjon.filemaster.pdf.model.DocumentConversionJob
 import uz.murodjon.filemaster.conversion.model.JobFile
 import uz.murodjon.filemaster.tools.dto.ToolDef
 import uz.murodjon.filemaster.tools.enums.EditOperation
@@ -34,6 +37,8 @@ class DocumentProcessor(
     private val pdfRasterizer: PdfRasterizer,
     private val imagesToPdf: ImagesToPdfConverter,
     private val pdfEditor: PdfEditor,
+    private val pdfStamper: PdfStamper,
+    private val pdfSecurity: PdfSecurity,
     private val support: ConversionSupport,
 ) : ConversionProcessor {
 
@@ -110,40 +115,74 @@ class DocumentProcessor(
         }
     }
 
-    /** rotate-pdf is 1->1; split-pdf is 1->n. */
+    /** split-pdf is 1->n; every other PDF edit is a 1->1 rewrite of each input. */
     private fun pdfEdit(job: ConversionJob, tool: ToolDef, workDir: Path) {
-        if (tool.editOperation == EditOperation.SPLIT) {
-            explode(job, workDir) { input, _ ->
-                pdfEditor.split(input, job.toSettings().splitRanges, workDir)
+        val settings = job.toSettings()
+        when (tool.editOperation) {
+            EditOperation.SPLIT -> explode(job, workDir) { input, _ ->
+                pdfEditor.split(input, settings.splitRanges, workDir)
             }
-        } else {
-            try {
-                val settings = job.toSettings()
-                val degrees = settings.rotateDegrees ?: 90
-                job.files.forEach { jobFile ->
-                    val upload = jobFile.upload
-                    val input = workDir.resolve(upload.originalName)
-                    support.storage.download(upload.absolutePath, input)
-                    jobFile.status = JobStatus.PROCESSING
-                    jobFile.progress = 50
+            EditOperation.ROTATE -> editEachFile(job, workDir, "rotated") { input, output ->
+                pdfEditor.rotate(input, settings.rotateDegrees ?: 90, output)
+            }
+            EditOperation.DELETE_PAGES -> editEachFile(job, workDir, "edited") { input, output ->
+                pdfEditor.deletePages(input, settings.pageRanges.orEmpty(), output)
+            }
+            EditOperation.EXTRACT_PAGES -> editEachFile(job, workDir, "extracted") { input, output ->
+                pdfEditor.extractPages(input, settings.pageRanges.orEmpty(), output)
+            }
+            EditOperation.REORDER_PAGES -> editEachFile(job, workDir, "reordered") { input, output ->
+                pdfEditor.reorderPages(input, settings.pageOrder.orEmpty(), output)
+            }
+            EditOperation.WATERMARK -> editEachFile(job, workDir, "watermarked") { input, output ->
+                pdfStamper.watermark(input, settings.watermarkText.orEmpty(),
+                    settings.watermarkPosition ?: "diagonal",
+                    settings.watermarkOpacity ?: 0.3, settings.watermarkFontSize ?: 48, output)
+            }
+            EditOperation.PAGE_NUMBERS -> editEachFile(job, workDir, "numbered") { input, output ->
+                pdfStamper.addPageNumbers(input, settings.pageNumberPosition ?: "bottom-center", output)
+            }
+            EditOperation.PROTECT -> editEachFile(job, workDir, "protected") { input, output ->
+                pdfSecurity.protect(input, requireNotNull(settings.password) { "Password is required." }, output)
+            }
+            EditOperation.UNLOCK -> editEachFile(job, workDir, "unlocked") { input, output ->
+                pdfSecurity.unlock(input, settings.password, output)
+            }
+            else -> support.failJob(job, "This PDF edit is not available yet.")
+        }
+        // The password has served its purpose — don't keep it at rest on the finished job row.
+        if (job is DocumentConversionJob && job.password != null) {
+            job.password = null
+            support.jobs.save(job)
+        }
+    }
 
-                    val output = workDir.resolve("rotated-${upload.originalName}")
-                    pdfEditor.rotate(input, degrees, output)
-                    val result = support.storeResult(job, output, upload.originalName)
-                    jobFile.name = result.originalName
-                    jobFile.result = result
-                    jobFile.bytes = result.bytes
-                    jobFile.status = JobStatus.DONE
-                    jobFile.progress = 100
-                }
-                job.status = JobStatus.DONE
-                job.progress = 100
-                support.jobs.save(job)
-                support.emitDone(job)
-            } catch (ex: Exception) {
-                log.warn("Rotate failed for job {}: {}", job.id, ex.message)
-                support.failJob(job, ex.message?.take(500) ?: "Rotate failed.")
+    /** Shared 1->1 PDF edit loop: download each input, run [edit], store the result. */
+    private fun editEachFile(job: ConversionJob, workDir: Path, prefix: String, edit: (input: Path, output: Path) -> Unit) {
+        try {
+            job.files.forEach { jobFile ->
+                val upload = jobFile.upload
+                val input = workDir.resolve(upload.originalName)
+                support.storage.download(upload.absolutePath, input)
+                jobFile.status = JobStatus.PROCESSING
+                jobFile.progress = 50
+
+                val output = workDir.resolve("$prefix-${upload.originalName}")
+                edit(input, output)
+                val result = support.storeResult(job, output, upload.originalName)
+                jobFile.name = result.originalName
+                jobFile.result = result
+                jobFile.bytes = result.bytes
+                jobFile.status = JobStatus.DONE
+                jobFile.progress = 100
             }
+            job.status = JobStatus.DONE
+            job.progress = 100
+            support.jobs.save(job)
+            support.emitDone(job)
+        } catch (ex: Exception) {
+            log.warn("PDF edit failed for job {}: {}", job.id, ex.message)
+            support.failJob(job, ex.message?.take(500) ?: "PDF edit failed.")
         }
     }
 

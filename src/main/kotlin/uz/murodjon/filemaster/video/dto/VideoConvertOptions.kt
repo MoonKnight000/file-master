@@ -19,4 +19,15 @@ data class VideoConvertOptions(
     val audioNormalize: Boolean? = null,
     val trimStartSeconds: Double? = null,
     val trimEndSeconds: Double? = null,
+    val speedFactor: Double? = null,    // speed-video: 0.25..4 (video + audio together)
+    val rotateDegrees: Int? = null,     // rotate-video: 90 | 180 | 270
+    val flipDirection: String? = null,  // flip-video: "horizontal" | "vertical"
+    val cropX: Int? = null,             // crop-video: rectangle in source-frame pixels
+    val cropY: Int? = null,
+    val cropWidth: Int? = null,
+    val cropHeight: Int? = null,
+    val watermarkText: String? = null,  // watermark-video
+    val watermarkPosition: String? = null,
+    val watermarkOpacity: Double? = null,
+    val watermarkFontSize: Int? = null,
 )

@@ -13,4 +13,7 @@ data class AudioConvertOptions(
     val audioNormalize: Boolean? = null,
     val trimStartSeconds: Double? = null,
     val trimEndSeconds: Double? = null,
+    val speedFactor: Double? = null,    // speed-audio: 0.25..4
+    val fadeInSeconds: Double? = null,  // fade-audio
+    val fadeOutSeconds: Double? = null, // fade-audio
 )

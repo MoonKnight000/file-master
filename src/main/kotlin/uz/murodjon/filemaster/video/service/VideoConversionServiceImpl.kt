@@ -8,6 +8,7 @@ import uz.murodjon.filemaster.video.dto.VideoConvertRequest
 import uz.murodjon.filemaster.conversion.service.ConversionService
 import uz.murodjon.filemaster.conversion.service.ConversionValidator
 import uz.murodjon.filemaster.conversion.service.MediaValidator
+import uz.murodjon.filemaster.tools.enums.EditOperation
 import uz.murodjon.filemaster.tools.enums.ToolGroup
 import uz.murodjon.filemaster.common.Quality
 import uz.murodjon.filemaster.tools.enums.ToolSlug
@@ -27,7 +28,8 @@ class VideoConversionServiceImpl(
         val o = request.options
         // Output format drives codec<->container compatibility, so resolve it before validating.
         val format = validator.resolveOutputFormat(tool, o?.outputFormat)
-        val isMuted = o?.muteAudio == true
+        // mute-video needs no knobs — the tool itself implies the effect.
+        val isMuted = o?.muteAudio ?: (tool.editOperation == EditOperation.MUTE)
         val opts = ConversionOptions(
             videoResolution = o?.videoResolution,
             videoFps = o?.videoFps,
@@ -41,8 +43,19 @@ class VideoConversionServiceImpl(
             audioNormalize = if (isMuted) null else o?.audioNormalize,
             trimStartSeconds = o?.trimStartSeconds,
             trimEndSeconds = o?.trimEndSeconds,
+            speedFactor = o?.speedFactor,
+            rotateDegrees = o?.rotateDegrees,
+            flipDirection = o?.flipDirection,
+            cropX = o?.cropX,
+            cropY = o?.cropY,
+            cropWidth = o?.cropWidth,
+            cropHeight = o?.cropHeight,
+            watermarkText = o?.watermarkText,
+            watermarkPosition = o?.watermarkPosition,
+            watermarkOpacity = o?.watermarkOpacity,
+            watermarkFontSize = o?.watermarkFontSize,
         )
-        mediaValidator.validateVideo(opts, format)
+        mediaValidator.validateVideo(opts, format, tool.editOperation)
         if (!isMuted) mediaValidator.validateAudio(opts)
 
         val job = VideoConversionJob(
@@ -56,7 +69,7 @@ class VideoConversionServiceImpl(
             videoFps = o?.videoFps,
             videoBitrateKbps = o?.videoBitrateKbps,
             videoCodec = o?.videoCodec,
-            muteAudio = o?.muteAudio ?: false,
+            muteAudio = isMuted,
             audioBitrateKbps = if (isMuted) null else o?.audioBitrateKbps,
             audioSampleRate = if (isMuted) null else o?.audioSampleRate,
             audioChannels = if (isMuted) null else o?.audioChannels,
@@ -64,6 +77,17 @@ class VideoConversionServiceImpl(
             audioNormalize = if (isMuted) false else (o?.audioNormalize ?: false),
             trimStartSeconds = o?.trimStartSeconds,
             trimEndSeconds = o?.trimEndSeconds,
+            speedFactor = o?.speedFactor,
+            rotateDegrees = o?.rotateDegrees,
+            flipDirection = o?.flipDirection,
+            cropX = o?.cropX,
+            cropY = o?.cropY,
+            cropWidth = o?.cropWidth,
+            cropHeight = o?.cropHeight,
+            watermarkText = o?.watermarkText,
+            watermarkPosition = o?.watermarkPosition,
+            watermarkOpacity = o?.watermarkOpacity,
+            watermarkFontSize = o?.watermarkFontSize,
         )
         return conversion.submit(job, sources)
     }
