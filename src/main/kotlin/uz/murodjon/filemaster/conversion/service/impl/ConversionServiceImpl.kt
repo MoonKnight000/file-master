@@ -11,10 +11,13 @@ import uz.murodjon.filemaster.conversion.dto.JobDto
 import uz.murodjon.filemaster.conversion.model.ConversionJob
 import uz.murodjon.filemaster.conversion.model.JobFile
 import uz.murodjon.filemaster.conversion.repository.ConversionJobRepository
+import uz.murodjon.filemaster.config.AppProperties
 import uz.murodjon.filemaster.conversion.service.ConversionService
 import uz.murodjon.filemaster.conversion.service.ConversionWorker
 import uz.murodjon.filemaster.exception.JobNotFoundException
 import uz.murodjon.filemaster.exception.NotFoundException
+import uz.murodjon.filemaster.exception.PlanLimitException
+import java.time.Instant
 import uz.murodjon.filemaster.files.model.StoredFile
 import uz.murodjon.filemaster.files.repository.StoredFileRepository
 import uz.murodjon.filemaster.pageable.getPagination
@@ -32,12 +35,15 @@ class ConversionServiceImpl(
     private val storage: StorageService,
     private val worker: ConversionWorker,
     private val userToolStats: UserToolStatService,
+    private val props: AppProperties,
 ) : ConversionService {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     override fun submit(job: ConversionJob, sources: List<StoredFile>): JobDto {
+        enforceDailyQuota(job)
+
         job.files = sources.map { source ->
             JobFile(job = job, upload = source, name = source.originalName)
         }.toMutableList()
@@ -86,6 +92,21 @@ class ConversionServiceImpl(
                 storage.get(rf.absolutePath).use { it.copyTo(zip) }
                 zip.closeEntry()
             }
+        }
+    }
+
+    /** Rolling-24h quota by plan; PREMIUM is unlimited. All five category services funnel here. */
+    private fun enforceDailyQuota(job: ConversionJob) {
+        val user = job.user
+        val limit = props.limits.dailyConversionLimit(user.guest, user.plan) ?: return
+        val cutoff = Instant.now().epochSecond - 24 * 3600
+        val used = jobs.countByUserIdAndCreatedTimestampGreaterThanEqual(user.id!!, cutoff)
+        if (used >= limit) {
+            throw PlanLimitException(
+                "Daily conversion limit reached ($limit per 24h). " +
+                    if (user.guest) "Create a free account for a higher limit, or upgrade to Pro."
+                    else "Upgrade to Pro for unlimited conversions.",
+            )
         }
     }
 

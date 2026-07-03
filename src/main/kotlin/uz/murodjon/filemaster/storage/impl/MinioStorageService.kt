@@ -1,9 +1,10 @@
-package uz.murodjon.filemaster.storage
+package uz.murodjon.filemaster.storage.impl
 
 import io.minio.*
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uz.murodjon.filemaster.storage.StorageService
 import uz.murodjon.filemaster.config.AppProperties
 import java.io.InputStream
 import java.nio.file.Files

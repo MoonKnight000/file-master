@@ -67,7 +67,32 @@
       "Bash(\"/c/Program Files/ffmpeg/bin/ffmpeg.exe\" -y -i test1.mp4 -vf 'drawtext=fontfile=C\\\\:/Windows/Fonts/arial.ttf:text=FILE MASTER:x=w-tw-24:y=h-th-24:fontsize=24:fontcolor=white@0.6:borderw=2:bordercolor=black@0.36' out-wm.mp4)",
       "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; $out = & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -vf 'drawtext=fontfile=C\\\\:/Windows/Fonts/arial.ttf:text=FILE MASTER:x=w-tw-24:y=h-th-24:fontsize=24:fontcolor=white@0.6:borderw=2:bordercolor=black@0.36' out-wm.mp4 2>&1 | Out-String; $out.Substring\\([Math]::Max\\(0,$out.Length-900\\)\\))",
       "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -vf 'drawtext=font=Arial:text=FILE MASTER:x=w-tw-24:y=h-th-24:fontsize=24:fontcolor=white@0.6:borderw=2:bordercolor=black@0.36' out-wm.mp4 2>$null; if \\(Test-Path out-wm.mp4\\) { \"WATERMARK OK: \" + \\(Get-Item out-wm.mp4\\).Length } else { \"WATERMARK FAILED\" })",
-      "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; $out = & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -i test2.mp4 -filter_complex \"[0:v]scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:\\(ow-iw\\)/2:\\(oh-ih\\)/2,setsar=1,fps=30[v0];[1:v]scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:\\(ow-iw\\)/2:\\(oh-ih\\)/2,setsar=1,fps=30[v1];[v0][0:a][v1][1:a]concat=n=2:v=1:a=1[v][a]\" -map \"[v]\" -map \"[a]\" out-merged.mp4 2>&1 | Out-String; if \\(Test-Path out-merged.mp4\\) { \"MERGE OK: \" + \\(Get-Item out-merged.mp4\\).Length } else { \"MERGE FAILED\"; $out.Substring\\([Math]::Max\\(0,$out.Length-700\\)\\) })"
+      "PowerShell(cd \"C:\\\\Users\\\\SURFAC~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Surface-PC-IdeaProjects-file-master\\\\5f73d35c-488e-4df0-90c2-bea3327ba5bb\\\\scratchpad\"; $out = & \"C:\\\\Program Files\\\\ffmpeg\\\\bin\\\\ffmpeg.exe\" -y -i test1.mp4 -i test2.mp4 -filter_complex \"[0:v]scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:\\(ow-iw\\)/2:\\(oh-ih\\)/2,setsar=1,fps=30[v0];[1:v]scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:\\(ow-iw\\)/2:\\(oh-ih\\)/2,setsar=1,fps=30[v1];[v0][0:a][v1][1:a]concat=n=2:v=1:a=1[v][a]\" -map \"[v]\" -map \"[a]\" out-merged.mp4 2>&1 | Out-String; if \\(Test-Path out-merged.mp4\\) { \"MERGE OK: \" + \\(Get-Item out-merged.mp4\\).Length } else { \"MERGE FAILED\"; $out.Substring\\([Math]::Max\\(0,$out.Length-700\\)\\) })",
+      "Bash(./gradlew bootRun --args=--server.port=7799)",
+      "PowerShell(Get-Process *)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Bash(where psql *)",
+      "Read(//c/Program Files/**)",
+      "Bash(PGPASSWORD=9654 C:/Program Files/PostgreSQL/18/bin/psql *)",
+      "Bash(PGPASSWORD=9654 \"C:/Program Files/PostgreSQL/18/bin/psql\" -h localhost -U postgres -d filemaster -c \"select count\\(*\\) as sessions from sessions\" -c \"select id, created_timestamp, to_timestamp\\(created_timestamp\\) from users order by id\")",
+      "Skill(update-config)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(mv *)",
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(mkdir *)",
+      "Bash(git *)",
+      "Bash(./gradlew *)",
+      "Bash(export JAVA_HOME*)",
+      "Bash(sed *)",
+      "Bash(diff *)",
+      "Bash(wc *)",
+      "Bash(mkdir -p files/service/impl billing/service/impl audio/service/impl video/service/impl archive/service/impl storage/impl)",
+      "Bash(mv files/service/FilesServiceImpl.kt files/service/impl/)",
+      "Bash(mv billing/service/BillingServiceImpl.kt billing/service/impl/)",
+      "Bash(mv audio/service/AudioConversionServiceImpl.kt audio/service/impl/)",
+      "Bash(mv video/service/VideoConversionServiceImpl.kt video/service/impl/)"
     ]
   }
 }

@@ -28,11 +28,11 @@ class SearchServiceImpl(
                 it.title.contains(query, true) || it.slug.contains(query, true) || it.desc.contains(query, true)
             }
             .take(cap)
-            .map { SearchToolDto(it.slug, it.title, it.category.token, it.icon) }
+            .map { SearchToolDto(it.slug, it.title, it.category, it.icon) }
 
         val matchedFiles = files
             .findByUserIdAndActiveTrueAndOriginalNameContainingIgnoreCase(user.id!!, query, PageRequest.of(0, cap))
-            .map { SearchFileDto(it.id!!, it.originalName, it.category.token, "/v1/files/${it.id}/download") }
+            .map { SearchFileDto(it.id!!, it.originalName, it.category, "/v1/files/${it.id}/download") }
 
         return SearchResponse(matchedTools, matchedFiles)
     }

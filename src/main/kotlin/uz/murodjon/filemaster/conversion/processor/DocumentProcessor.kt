@@ -14,7 +14,7 @@ import uz.murodjon.filemaster.conversion.engine.PdfSecurity
 import uz.murodjon.filemaster.conversion.engine.PdfStamper
 import uz.murodjon.filemaster.conversion.engine.TesseractConverter
 import uz.murodjon.filemaster.conversion.model.ConversionJob
-import uz.murodjon.filemaster.pdf.model.DocumentConversionJob
+import uz.murodjon.filemaster.document.model.DocumentConversionJob
 import uz.murodjon.filemaster.conversion.model.JobFile
 import uz.murodjon.filemaster.tools.dto.ToolDef
 import uz.murodjon.filemaster.tools.enums.EditOperation

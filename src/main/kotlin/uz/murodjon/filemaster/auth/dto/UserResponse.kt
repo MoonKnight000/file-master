@@ -10,6 +10,8 @@ data class UserResponse(
     val email: String?,
     val avatar: FileDto?,
     val plan: UserPlan,
+    /** When the paid plan lapses back to free; null for free accounts. */
+    val planExpiresTimestamp: Long? = null,
     val limits: UserLimits,
     val usage: UserUsage,
 )

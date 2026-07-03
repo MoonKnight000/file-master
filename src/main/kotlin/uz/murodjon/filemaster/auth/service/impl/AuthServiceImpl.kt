@@ -46,6 +46,11 @@ class AuthServiceImpl(
 
     private val sessionTtlSeconds = 24 * 60 * 60L
 
+    private companion object {
+        /** Guest sliding-expiration renewals are written at most this often per session. */
+        const val RENEW_THROTTLE_SECONDS = 3600L
+    }
+
     @Transactional
     override fun createGuestSession(): IssuedSession {
         val user = users.save(User(guest = true, plan = UserPlan.FREE))
@@ -54,11 +59,9 @@ class AuthServiceImpl(
 
     @Transactional
     override fun register(request: RegisterRequest): IssuedSession {
-        val email = request.email?.trim()?.lowercase()
-            ?.takeIf { it.contains("@") && it.length >= 3 }
-            ?: throw ValidationException("A valid email is required.")
-        val password = request.password?.takeIf { it.length >= 6 }
-            ?: throw ValidationException("Password must be at least 6 characters.")
+        // Format/length rules are enforced by Bean Validation on RegisterRequest (@Valid).
+        val email = request.email!!.trim().lowercase()
+        val password = request.password!!
 
         users.findByEmailIgnoreCaseAndActiveTrue(email).ifPresent {
             throw ValidationException("Email already in use.")
@@ -88,14 +91,13 @@ class AuthServiceImpl(
         if (hash == null || !passwordEncoder.matches(password, hash)) {
             throw UnauthenticatedException("Invalid email or password.")
         }
+        absorbGuest(user)
         return issue(user)
     }
 
     @Transactional
     override fun loginWithGoogle(request: GoogleSignInRequest): IssuedSession {
-        val idToken = request.idToken?.trim()?.takeIf { it.isNotEmpty() }
-            ?: throw ValidationException("`idToken` is required.")
-        val account = googleVerifier.verify(idToken)
+        val account = googleVerifier.verify(request.idToken!!.trim())
 
         // Link by Google id first, then fall back to a matching email; otherwise upgrade the
         // current guest in place (keeps their files) or create a fresh account.
@@ -109,6 +111,8 @@ class AuthServiceImpl(
             if (name.isNullOrBlank()) name = account.name
             updatedTimestamp = Instant.now().epochSecond
         }
+        // Linked to an existing account while browsing as a guest? Bring the guest's work along.
+        if (existing != null) absorbGuest(existing)
         return issue(users.save(user))
     }
 
@@ -118,15 +122,26 @@ class AuthServiceImpl(
         sessions.findByToken(raw).ifPresent { sessions.delete(it) }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     override fun requireUser(bearer: String?): User {
         val token = bearer?.removePrefix("Bearer ")?.trim()
             ?.takeIf { it.isNotEmpty() }
             ?: throw UnauthenticatedException()
         val session = sessions.findByToken(token).orElse(null)
             ?: throw UnauthenticatedException()
-        if (session.expiresTimestamp < Instant.now().epochSecond) {
+        val now = Instant.now().epochSecond
+        if (session.expiresTimestamp < now) {
             throw UnauthenticatedException("Session expired.")
+        }
+        // Sliding expiration for guests: any authenticated request pushes the TTL window
+        // forward so an active guest never silently loses the session (and with it the
+        // files). Throttled to one DB write per hour per session.
+        if (session.user.guest) {
+            val renewed = now + sessionTtlSeconds
+            if (renewed - session.expiresTimestamp > RENEW_THROTTLE_SECONDS) {
+                session.expiresTimestamp = renewed
+                sessions.save(session)
+            }
         }
         return session.user
     }
@@ -136,12 +151,8 @@ class AuthServiceImpl(
 
     @Transactional
     override fun updateProfile(user: User, request: UpdateProfileRequest): UserResponse {
-        request.name?.trim()?.let { name ->
-            if (name.isEmpty()) throw ValidationException("Name must not be blank.")
-            if (name.length < 2) throw ValidationException("Name must be at least 2 characters.")
-            if (name.length > 100) throw ValidationException("Name must be at most 100 characters.")
-            user.name = name
-        }
+        // Blank/length rules are enforced by Bean Validation on UpdateProfileRequest (@Valid).
+        request.name?.let { user.name = it.trim() }
         request.avatarId?.let { avatarId ->
             val file = files.findByIdAndUserIdAndActiveTrue(avatarId, user.id!!)
                 .orElseThrow { AvatarFileNotFoundException("Avatar file not found or does not belong to you.") }
@@ -155,15 +166,11 @@ class AuthServiceImpl(
     override fun changePassword(user: User, request: ChangePasswordRequest) {
         val hash = user.passwordHash
             ?: throw ValidationException("This account has no password to change.")
-        val current = request.currentPassword
-            ?: throw ValidationException("Current password is required.")
-        if (!passwordEncoder.matches(current, hash)) {
+        if (!passwordEncoder.matches(request.currentPassword!!, hash)) {
             throw ValidationException("Current password is incorrect.")
         }
-        val newPassword = request.newPassword?.takeIf { it.length >= 6 }
-            ?: throw ValidationException("New password must be at least 6 characters.")
 
-        user.passwordHash = passwordEncoder.encode(newPassword)
+        user.passwordHash = passwordEncoder.encode(request.newPassword!!)
         user.updatedTimestamp = Instant.now().epochSecond
         users.save(user)
     }
@@ -198,11 +205,12 @@ class AuthServiceImpl(
     private fun User.toMeResponse(): UserResponse {
         val userId = id!!
         val pro = plan == UserPlan.PREMIUM
-        val retentionMinutes = props.limits.retentionMinutes
+        val retentionMinutes = props.limits.retentionMinutesFor(plan)
         val byCategory = files.countActiveByCategory(userId)
             .map { CategoryUsage(it.category, it.count) }
             .sortedBy { it.category.token }
         val avatar = avatar?.let { FileDto(it, retentionMinutes) }
+        val dayCutoff = Instant.now().epochSecond - 24 * 3600
         return UserResponse(
             id = userId,
             guest = guest,
@@ -210,15 +218,18 @@ class AuthServiceImpl(
             email = email,
             avatar = avatar,
             plan = plan,
+            planExpiresTimestamp = planExpiresTimestamp,
             limits = UserLimits(
                 maxFileBytes = props.limits.maxFileBytes,
                 batchConvert = pro || props.limits.freeBatchConvert,
                 retentionMinutes = retentionMinutes,
+                dailyConversions = props.limits.dailyConversionLimit(guest, plan),
             ),
             usage = UserUsage(
                 fileCount = files.countByUserIdAndActiveTrue(userId),
                 storageBytes = files.sumActiveBytes(userId),
                 conversionCount = jobs.countByUserId(userId),
+                conversionsToday = jobs.countByUserIdAndCreatedTimestampGreaterThanEqual(userId, dayCutoff),
                 byCategory = byCategory,
             ),
         )
@@ -233,4 +244,20 @@ class AuthServiceImpl(
 
     private fun currentPrincipal(): User? =
         SecurityContextHolder.getContext().authentication?.principal as? User
+
+    /**
+     * When someone logs into an EXISTING account while browsing as a guest, move the guest's
+     * files and conversion history onto that account so nothing they did is lost.
+     * (Fresh registrations don't need this — the guest row itself is upgraded in place.)
+     */
+    private fun absorbGuest(target: User) {
+        val guest = currentPrincipal() ?: return
+        val guestId = guest.id ?: return
+        if (!guest.guest || guestId == target.id) return
+
+        val moved = files.findByUserIdAndActiveTrue(guestId)
+        moved.forEach { it.user = target }
+        files.saveAll(moved)
+        jobs.reassignUser(guest, target)
+    }
 }

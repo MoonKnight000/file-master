@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.pdf.dto
+package uz.murodjon.filemaster.document.dto
 
 import uz.murodjon.filemaster.tools.enums.ToolSlug
 

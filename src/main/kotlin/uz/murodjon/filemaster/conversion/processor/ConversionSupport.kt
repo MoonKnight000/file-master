@@ -16,6 +16,7 @@ import uz.murodjon.filemaster.conversion.service.JobEvents
 import uz.murodjon.filemaster.files.enums.FileSource
 import uz.murodjon.filemaster.files.model.StoredFile
 import uz.murodjon.filemaster.files.repository.StoredFileRepository
+import uz.murodjon.filemaster.mail.service.MailService
 import uz.murodjon.filemaster.storage.StorageService
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,6 +34,7 @@ class ConversionSupport(
     val files: StoredFileRepository,
     val storage: StorageService,
     private val events: JobEvents,
+    private val mail: MailService,
     val props: AppProperties,
 ) {
 
@@ -40,7 +42,19 @@ class ConversionSupport(
 
     fun emitProgress(job: ConversionJob) = events.emitProgress(job.id!!, JobDto(job))
 
-    fun emitDone(job: ConversionJob) = events.emitDone(job.id!!, JobDto(job))
+    fun emitDone(job: ConversionJob) {
+        events.emitDone(job.id!!, JobDto(job))
+        notifyByMail(job)
+    }
+
+    /** Best-effort "conversion ready" mail for registered users; never fails the job. */
+    private fun notifyByMail(job: ConversionJob) {
+        if (job.status != JobStatus.DONE) return
+        val email = job.user.email?.takeIf { it.isNotBlank() && !job.user.guest } ?: return
+        val names = job.files.mapNotNull { it.result?.originalName }
+        runCatching { mail.sendConversionDone(email, job.id!!, names) }
+            .onFailure { log.warn("Mail notify failed for job {}: {}", job.id, it.message) }
+    }
 
     fun saveAndEmitProgress(job: ConversionJob) {
         jobs.save(job)

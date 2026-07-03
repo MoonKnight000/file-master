@@ -26,29 +26,28 @@ class ImageConversionServiceImpl(
         val sources = validator.resolveInputs(user, request.fileIds, tool)
 
         val o = request.options
-        mediaValidator.validateImage(
-            ConversionOptions(
-                imageWidth = o?.imageWidth,
-                imageHeight = o?.imageHeight,
-                imageQuality = o?.imageQuality,
-                targetBytes = o?.targetBytes,
-                rotateDegrees = o?.rotateDegrees,
-                cropX = o?.cropX,
-                cropY = o?.cropY,
-                cropWidth = o?.cropWidth,
-                cropHeight = o?.cropHeight,
-                flipDirection = o?.flipDirection,
-                imageFilter = o?.imageFilter,
-                brightness = o?.brightness,
-                contrast = o?.contrast,
-                saturation = o?.saturation,
-                watermarkText = o?.watermarkText,
-                watermarkPosition = o?.watermarkPosition,
-                watermarkOpacity = o?.watermarkOpacity,
-                watermarkFontSize = o?.watermarkFontSize,
-            ),
-            tool.editOperation,
+        val opts = ConversionOptions(
+            imageWidth = o?.imageWidth,
+            imageHeight = o?.imageHeight,
+            imageQuality = o?.imageQuality,
+            targetBytes = o?.targetBytes,
+            rotateDegrees = o?.rotateDegrees,
+            cropX = o?.cropX,
+            cropY = o?.cropY,
+            cropWidth = o?.cropWidth,
+            cropHeight = o?.cropHeight,
+            flipDirection = o?.flipDirection,
+            imageFilter = o?.imageFilter,
+            brightness = o?.brightness,
+            contrast = o?.contrast,
+            saturation = o?.saturation,
+            watermarkText = o?.watermarkText,
+            watermarkPosition = o?.watermarkPosition,
+            watermarkOpacity = o?.watermarkOpacity,
+            watermarkFontSize = o?.watermarkFontSize,
         )
+        mediaValidator.validateImage(opts, tool.editOperation)
+        mediaValidator.validateCropBounds(opts, sources)
 
         val format = validator.resolveOutputFormat(tool, o?.outputFormat)
         val job = ImageConversionJob(

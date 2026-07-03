@@ -27,6 +27,20 @@ class PdfSecurity {
     }
 
     /**
+     * True when the PDF opens with [password] (a non-encrypted PDF always does). Used for the
+     * cheap submit-time password check on unlock-pdf. Non-password load failures (corrupt
+     * file, not a PDF) return true — those are the conversion job's problem, not the password's.
+     */
+    fun passwordAccepted(input: Path, password: String?): Boolean = try {
+        Loader.loadPDF(input.toFile(), password ?: "").close()
+        true
+    } catch (e: InvalidPasswordException) {
+        false
+    } catch (e: Exception) {
+        true
+    }
+
+    /**
      * Removes the encryption from [input] using [password] to open it, writing [output].
      * A PDF that is not encrypted passes through unchanged.
      */

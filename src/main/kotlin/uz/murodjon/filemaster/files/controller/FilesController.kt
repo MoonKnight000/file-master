@@ -57,7 +57,7 @@ interface FilesController {
     @PostMapping("/{fileId}/share")
     fun share(
         @PathVariable fileId: Long,
-        @RequestBody(required = false) body: CreateShareRequest?,
+        @RequestBody(required = false) @Valid body: CreateShareRequest?,
         @CurrentUser user: User,
     ): ResponseEntity<ResponseData<ShareLinkResponse>>
 }

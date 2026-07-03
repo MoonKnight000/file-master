@@ -19,6 +19,8 @@ class User(
     var passwordHash: String? = null,
     /** Google `sub` once the account is linked via Google Sign-In; null otherwise. */
     @Column(unique = true) var googleId: String? = null,
+    /** When a paid plan lapses back to FREE; null = no paid period (or never expires). */
+    var planExpiresTimestamp: Long? = null,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

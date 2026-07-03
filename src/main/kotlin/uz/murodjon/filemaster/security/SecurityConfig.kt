@@ -45,6 +45,8 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.POST, "/v1/auth/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/v1/tools", "/v1/tools/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/v1/share/**").permitAll()
+                // Payment provider callback — no bearer token; guarded by X-Webhook-Secret.
+                it.requestMatchers(HttpMethod.POST, "/v1/billing/webhook").permitAll()
                 it.requestMatchers(
                     "/v3/api-docs/**",
                     "/swagger-ui/**",

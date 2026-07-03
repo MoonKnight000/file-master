@@ -1,5 +1,6 @@
 package uz.murodjon.filemaster.conversion.controller
 
+import jakarta.validation.Valid
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -25,7 +26,7 @@ interface ConversionController {
 
     @PostMapping("/filter")
     fun filter(
-        @RequestBody filter: ConversionFilterRequest,
+        @RequestBody @Valid filter: ConversionFilterRequest,
         @CurrentUser user: User,
     ): ResponseEntity<ResponseData<PageableData<JobDto>>>
 

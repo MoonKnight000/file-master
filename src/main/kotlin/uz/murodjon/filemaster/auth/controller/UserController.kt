@@ -1,6 +1,7 @@
 package uz.murodjon.filemaster.auth.controller
 
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import uz.murodjon.filemaster.auth.dto.ChangePasswordRequest
@@ -10,7 +11,7 @@ import uz.murodjon.filemaster.auth.model.User
 import uz.murodjon.filemaster.auth.security.CurrentUser
 import uz.murodjon.filemaster.util.ResponseData
 
-@RequestMapping("/v1/user")
+@RequestMapping("/v1/me")
 interface UserController {
 
     @GetMapping
@@ -19,13 +20,13 @@ interface UserController {
     @PatchMapping
     fun updateProfile(
         @CurrentUser user: User,
-        @RequestBody request: UpdateProfileRequest,
+        @RequestBody @Valid request: UpdateProfileRequest,
     ): ResponseEntity<ResponseData<UserResponse>>
 
     @PostMapping("/password")
     fun changePassword(
         @CurrentUser user: User,
-        @RequestBody request: ChangePasswordRequest,
+        @RequestBody @Valid request: ChangePasswordRequest,
     ): ResponseEntity<ResponseData<Unit>>
 
     @DeleteMapping

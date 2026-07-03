@@ -47,6 +47,15 @@ class StoredFile(
 
     var active: Boolean = true
     var starred: Boolean = false
+
+    /**
+     * Pixel dimensions, probed at upload for images/videos (ImageIO header / ffprobe).
+     * Null for other categories, pre-existing rows and files the probe couldn't read —
+     * crop validation then falls back to the job-level check.
+     */
+    var width: Int? = null
+    var height: Int? = null
+
     var createdTimestamp: Long? = Instant.now().epochSecond
     var updatedTimestamp: Long? = Instant.now().epochSecond
     var deletedTimestamp: Long? = null

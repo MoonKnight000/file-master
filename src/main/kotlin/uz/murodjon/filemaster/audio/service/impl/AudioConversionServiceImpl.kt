@@ -1,6 +1,7 @@
-package uz.murodjon.filemaster.audio.service
+package uz.murodjon.filemaster.audio.service.impl
 
 import org.springframework.stereotype.Service
+import uz.murodjon.filemaster.audio.service.AudioConversionService
 import uz.murodjon.filemaster.audio.model.AudioConversionJob
 import uz.murodjon.filemaster.auth.model.User
 import uz.murodjon.filemaster.audio.dto.AudioConvertRequest

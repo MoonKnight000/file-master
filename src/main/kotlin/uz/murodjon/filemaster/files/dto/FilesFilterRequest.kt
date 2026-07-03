@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.data.domain.Sort
 import uz.murodjon.filemaster.common.CategoryToken
+import uz.murodjon.filemaster.files.enums.FileSource
 import uz.murodjon.filemaster.files.enums.FilesFilterOrder
 import uz.murodjon.filemaster.pageable.FilterInterface
 
@@ -16,4 +17,8 @@ data class FilesFilterRequest(
     override val orders: LinkedHashMap<FilesFilterOrder, Sort.Direction> = linkedMapOf(FilesFilterOrder.CREATED_TIMESTAMP to Sort.Direction.DESC),
     val category: List<CategoryToken> = CategoryToken.entries,
     val starred: Boolean = false,
+    /** Case-insensitive substring match on the file name. */
+    val query: String? = null,
+    /** Restrict to uploads or conversion results; null = both. */
+    val source: FileSource? = null,
 ) : FilterInterface<FilesFilterOrder>

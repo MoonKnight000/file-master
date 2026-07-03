@@ -1,7 +1,7 @@
-package uz.murodjon.filemaster.pdf.service
+package uz.murodjon.filemaster.document.service
 
 import uz.murodjon.filemaster.auth.model.User
-import uz.murodjon.filemaster.pdf.dto.DocumentConvertRequest
+import uz.murodjon.filemaster.document.dto.DocumentConvertRequest
 import uz.murodjon.filemaster.conversion.dto.JobDto
 
 interface DocumentConversionService {

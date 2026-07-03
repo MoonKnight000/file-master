@@ -14,6 +14,7 @@ import uz.murodjon.filemaster.tools.enums.EditOperation
 import uz.murodjon.filemaster.tools.enums.ToolKind
 import uz.murodjon.filemaster.tools.service.ToolCatalog
 import uz.murodjon.filemaster.tools.service.ToolProvider
+import uz.murodjon.filemaster.tools.service.ToolSeo
 import uz.murodjon.filemaster.tools.service.ToolsService
 
 @Service
@@ -34,13 +35,15 @@ class ToolsServiceImpl(
             slug = tool.slug,
             title = tool.title,
             desc = tool.desc,
-            category = tool.category.token,
-            kind = tool.kind.value,
+            category = tool.category,
+            kind = tool.kind,
             icon = tool.icon,
-            badge = tool.badge?.value,
+            badge = tool.badge,
             accept = tool.accept,
-            outputFormats = tool.outputFormats.map { it.value },
-            defaultFormat = tool.defaultFormat.value,
+            outputFormats = tool.outputFormats,
+            defaultFormat = tool.defaultFormat,
+            longDescription = ToolSeo.longDescription(tool),
+            faq = ToolSeo.faq(tool),
             options = ToolOptions(
                 quality = catalog.qualityOptions(),
                 keepOriginal = tool.keepOriginalDefault,

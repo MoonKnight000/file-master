@@ -2,6 +2,7 @@ package uz.murodjon.filemaster.exception
 
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -23,6 +24,14 @@ class GlobalExceptionHandler {
         val msg = ex.bindingResult.fieldErrors.joinToString("; ") { "${it.field}: ${it.defaultMessage}" }
         return ResponseEntity.status(ExcCode.VALIDATION_ERROR.status)
             .body(ErrorResponse(ErrorBody(ExcCode.VALIDATION_ERROR.name, msg.ifBlank { "Invalid request." })))
+    }
+
+    /** Malformed JSON or an unknown enum value in a request body — client error, not a 500. */
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleUnreadable(ex: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
+        log.warn("Unreadable request body: {}", ex.message)
+        return ResponseEntity.status(ExcCode.VALIDATION_ERROR.status)
+            .body(ErrorResponse(ErrorBody(ExcCode.VALIDATION_ERROR.name, "Malformed request body.")))
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException::class)

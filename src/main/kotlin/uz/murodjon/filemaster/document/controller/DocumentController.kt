@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.pdf.controller
+package uz.murodjon.filemaster.document.controller
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import uz.murodjon.filemaster.auth.model.User
 import uz.murodjon.filemaster.auth.security.CurrentUser
-import uz.murodjon.filemaster.pdf.dto.DocumentConvertRequest
+import uz.murodjon.filemaster.document.dto.DocumentConvertRequest
 import uz.murodjon.filemaster.conversion.dto.JobDto
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
 import uz.murodjon.filemaster.util.ResponseData

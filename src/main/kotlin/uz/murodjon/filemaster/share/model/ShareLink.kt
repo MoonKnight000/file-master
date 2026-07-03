@@ -25,5 +25,8 @@ class ShareLink(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
 
+    /** How many times the shared file was downloaded through this link. */
+    var downloadCount: Long = 0
+
     var createdTimestamp: Long? = Instant.now().epochSecond
 }

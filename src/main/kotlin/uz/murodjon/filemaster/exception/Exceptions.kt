@@ -24,6 +24,13 @@ class UnauthenticatedException(
     override val code = ExcCode.UNAUTHENTICATED
 }
 
+// --- 403 FORBIDDEN ---
+class ForbiddenException(
+    message: String = "Forbidden.",
+) : BaseException(message) {
+    override val code = ExcCode.FORBIDDEN
+}
+
 // --- 403 PLAN_LIMIT ---
 class PlanLimitException(
     message: String,

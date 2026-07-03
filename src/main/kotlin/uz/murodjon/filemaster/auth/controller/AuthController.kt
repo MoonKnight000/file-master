@@ -2,6 +2,7 @@ package uz.murodjon.filemaster.auth.controller
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -24,7 +25,7 @@ interface AuthController {
 
     @PostMapping("/register")
     fun register(
-        @RequestBody request: RegisterRequest,
+        @RequestBody @Valid request: RegisterRequest,
         response: HttpServletResponse,
     ): ResponseEntity<ResponseData<SessionResponse>>
 
@@ -36,7 +37,7 @@ interface AuthController {
 
     @PostMapping("/google")
     fun google(
-        @RequestBody request: GoogleSignInRequest,
+        @RequestBody @Valid request: GoogleSignInRequest,
         response: HttpServletResponse,
     ): ResponseEntity<ResponseData<SessionResponse>>
 

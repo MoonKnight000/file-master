@@ -1,6 +1,7 @@
-package uz.murodjon.filemaster.video.service
+package uz.murodjon.filemaster.video.service.impl
 
 import org.springframework.stereotype.Service
+import uz.murodjon.filemaster.video.service.VideoConversionService
 import uz.murodjon.filemaster.auth.model.User
 import uz.murodjon.filemaster.conversion.dto.ConversionOptions
 import uz.murodjon.filemaster.conversion.dto.JobDto
@@ -57,6 +58,7 @@ class VideoConversionServiceImpl(
         )
         mediaValidator.validateVideo(opts, format, tool.editOperation)
         if (!isMuted) mediaValidator.validateAudio(opts)
+        mediaValidator.validateCropBounds(opts, sources)
 
         val job = VideoConversionJob(
             user = user,

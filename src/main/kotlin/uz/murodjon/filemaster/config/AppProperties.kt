@@ -9,4 +9,5 @@ data class AppProperties(
     val tools: ToolsProperties,
     val cors: CorsProperties,
     val google: GoogleProperties = GoogleProperties(),
+    val billing: BillingProperties = BillingProperties(),
 )

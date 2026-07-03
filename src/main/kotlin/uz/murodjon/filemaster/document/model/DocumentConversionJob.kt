@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.pdf.model
+package uz.murodjon.filemaster.document.model
 
 import jakarta.persistence.Entity
 import jakarta.persistence.Table

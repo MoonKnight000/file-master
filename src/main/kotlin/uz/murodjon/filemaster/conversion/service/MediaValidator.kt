@@ -3,6 +3,7 @@ package uz.murodjon.filemaster.conversion.service
 import org.springframework.stereotype.Component
 import uz.murodjon.filemaster.conversion.dto.ConversionOptions
 import uz.murodjon.filemaster.exception.ValidationException
+import uz.murodjon.filemaster.files.model.StoredFile
 import uz.murodjon.filemaster.tools.enums.EditOperation
 import uz.murodjon.filemaster.tools.service.ToolCatalog
 
@@ -245,6 +246,29 @@ class MediaValidator(private val catalog: ToolCatalog) {
                 }
             // TRIM has safe defaults; UNLOCK's password is optional; MUTE/REVERSE/NORMALIZE need no knobs.
             else -> Unit
+        }
+    }
+
+    /**
+     * Submit-time crop bounds check against each source's probed pixel dimensions, so an
+     * out-of-bounds crop fails the request instead of the job minutes later. Sources with
+     * unknown dimensions (old rows, unprobeable files) are skipped — the job-level failure
+     * stays as the fallback for those.
+     */
+    fun validateCropBounds(opts: ConversionOptions?, sources: List<StoredFile>) {
+        val x = opts?.cropX ?: return
+        val y = opts.cropY ?: return
+        val w = opts.cropWidth ?: return
+        val h = opts.cropHeight ?: return
+        sources.forEach { source ->
+            val width = source.width ?: return@forEach
+            val height = source.height ?: return@forEach
+            if (x + w > width || y + h > height) {
+                throw ValidationException(
+                    "Crop area (${w}x$h at $x,$y) exceeds '${source.originalName}' (${width}x$height).",
+                    mapOf("fileId" to source.id, "originalWidth" to width, "originalHeight" to height),
+                )
+            }
         }
     }
 

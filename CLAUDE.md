@@ -16,6 +16,8 @@ endpoint, enum or DTO change), record it in the front-end repo:
   created the session's file earlier in the same chat, APPEND to it — do not make a new one.
 - Each entry: the endpoint(s) affected, before → after, and why. This is the human-readable
   changelog; `docs/API.md` itself still gets updated in place as the canonical contract.
+- `file-master-front/docs/API-QOLLANMA.md` is the plain-language (Uzbek) endpoint guide —
+  update its affected section too when an endpoint's purpose/shape changes.
 
 ## Build & run (READ FIRST)
 
@@ -36,15 +38,21 @@ endpoint, enum or DTO change), record it in the front-end repo:
 
 ## Architecture rules (STRICT — the user rejected the alternatives)
 
-1. **Per-feature folder layout:** each module has `controller/`,
-   `service/` ,`model/`, `repository/`, `dto/`, `enums/`.
-2. **Controllers = `interface XxxController` + `class XxxControllerImpl`.** Mapping
-   annotations (`@RequestMapping("/v1/...")`, `@GetMapping`, `@RequestBody`, `@RequestParam`,
-   `@PathVariable`, `@CurrentUser`) live on the **interface**. The impl is a bare
-   `@RestController` (NO `@RequestMapping`) and its overrides carry NO annotations —
-   Spring 6+ merges them from the interface. Controllers are thin and only delegate.
-3. **Services = `interface XxxService` + a single `class XxxServiceImpl`** (same package).
-   ALL business logic lives in the service, never the controller. Same for workers/storage.
+The full architecture spec lives in `docs/ARCHITECTURE.md` — keep it in sync. Summary:
+
+1. **Per-feature folder layout:** each module has `controller/`, `service/` (+
+   `service/impl/`), `model/`, `repository/`, `dto/`, `enums/`, plus feature-specific
+   extras (`engine/`, `processor/`, `schedule/`, `security/`). The document-tools module
+   is `document/` (matches ToolGroup), NOT `pdf/`.
+2. **Controllers = `interface XxxController` + `class XxxControllerImpl`, BOTH directly in
+   `controller/`** (no `controller/impl/`). Mapping annotations (`@RequestMapping("/v1/...")`,
+   `@GetMapping`, `@RequestBody`, `@RequestParam`, `@PathVariable`, `@CurrentUser`) live on
+   the **interface**. The impl is a bare `@RestController` (NO `@RequestMapping`) and its
+   overrides carry NO annotations — Spring 6+ merges them from the interface. Controllers
+   are thin and only delegate.
+3. **Services = `interface XxxService` in `service/` + a single `class XxxServiceImpl` in
+   `service/impl/`.** ALL business logic lives in the service, never the controller. Same
+   split for storage (`storage/StorageService` + `storage/impl/MinioStorageService`).
 4. **Every endpoint returns `ResponseEntity<ResponseData<T>>`** (the `util/ResponseData`
    success envelope). All paths start with `/v1/` (never `/api/`).
 5. **One class per file (STRICT):** every top-level class/interface/enum/data class in its

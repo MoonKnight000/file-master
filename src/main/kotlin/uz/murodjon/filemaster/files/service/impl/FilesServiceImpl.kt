@@ -1,6 +1,9 @@
-package uz.murodjon.filemaster.files.service
+package uz.murodjon.filemaster.files.service.impl
 
 import org.springframework.stereotype.Service
+import uz.murodjon.filemaster.common.CategoryToken
+import uz.murodjon.filemaster.files.service.DimensionProbe
+import uz.murodjon.filemaster.files.service.FilesService
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import uz.murodjon.filemaster.auth.model.User
@@ -20,6 +23,8 @@ import uz.murodjon.filemaster.files.repository.StoredFileSpec
 import uz.murodjon.filemaster.pageable.getPagination
 import uz.murodjon.filemaster.storage.StorageService
 import uz.murodjon.filemaster.util.PageableData
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.util.UUID
 
@@ -28,6 +33,7 @@ class FilesServiceImpl(
     private val filesRepository: StoredFileRepository,
     private val storage: StorageService,
     private val props: AppProperties,
+    private val dimensionProbe: DimensionProbe,
 ) : FilesService {
 
     @Transactional
@@ -55,9 +61,25 @@ class FilesServiceImpl(
         }
         filesRepository.saveAll(entities)
         files.zip(entities).forEach { (multipart, entity) ->
-            multipart.inputStream.use { storage.putStream(entity.absolutePath, it, multipart.size, multipart.contentType) }
+            // Images/videos take a temp-file detour so their pixel dimensions can be probed
+            // (needed for submit-time crop validation); everything else streams straight through.
+            if (entity.category == CategoryToken.IMAGE || entity.category == CategoryToken.VIDEO) {
+                val tmp = Files.createTempFile("upload-", ".${entity.format}")
+                try {
+                    multipart.inputStream.use { Files.copy(it, tmp, StandardCopyOption.REPLACE_EXISTING) }
+                    dimensionProbe.probe(tmp, entity.category)?.let { (w, h) ->
+                        entity.width = w
+                        entity.height = h
+                    }
+                    storage.putFile(entity.absolutePath, tmp, multipart.contentType)
+                } finally {
+                    Files.deleteIfExists(tmp)
+                }
+            } else {
+                multipart.inputStream.use { storage.putStream(entity.absolutePath, it, multipart.size, multipart.contentType) }
+            }
         }
-        return entities.map { FileDto(it, props.limits.retentionMinutes) }
+        return entities.map { FileDto(it, props.limits.retentionMinutesFor(user.plan)) }
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +92,7 @@ class FilesServiceImpl(
             totalPages = result.totalPages,
             currentPage = result.number + 1,
             totalElements = result.totalElements,
-            data = result.content.map { FileDto(it, props.limits.retentionMinutes) },
+            data = result.content.map { FileDto(it, props.limits.retentionMinutesFor(user.plan)) },
         )
     }
 
@@ -96,7 +118,7 @@ class FilesServiceImpl(
         body.starred?.let { file.starred = it }
         file.updatedTimestamp = Instant.now().epochSecond
         filesRepository.save(file)
-        return FileDto(file, props.limits.retentionMinutes)
+        return FileDto(file, props.limits.retentionMinutesFor(user.plan))
     }
 
     @Transactional

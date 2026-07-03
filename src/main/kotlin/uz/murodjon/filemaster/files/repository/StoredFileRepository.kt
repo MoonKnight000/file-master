@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
+import uz.murodjon.filemaster.auth.enums.UserPlan
 import uz.murodjon.filemaster.files.enums.FileSource
 import uz.murodjon.filemaster.files.model.StoredFile
 import java.util.Optional
@@ -40,5 +41,16 @@ interface StoredFileRepository : JpaRepository<StoredFile, Long>, JpaSpecificati
     fun findBySourceAndActiveTrueAndCreatedTimestampLessThan(
         source: FileSource,
         cutoff: Long,
+    ): List<StoredFile>
+
+    /** Same as above but only for owners on [plan] — retention windows differ per plan. */
+    @Query(
+        "select f from StoredFile f where f.source = :source and f.active = true " +
+            "and f.createdTimestamp < :cutoff and f.user.plan = :plan",
+    )
+    fun findExpiredResultsForPlan(
+        source: FileSource,
+        cutoff: Long,
+        plan: UserPlan,
     ): List<StoredFile>
 }
