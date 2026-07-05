@@ -54,6 +54,14 @@ class ConversionValidator(
         if (ids.size > 1 && user.plan != UserPlan.PREMIUM && !props.limits.freeBatchConvert) {
             throw PlanLimitException("Batch conversion is a Pro feature.")
         }
+        val maxBatch = props.limits.maxBatchFilesFor(user.plan)
+        if (ids.size > maxBatch) {
+            throw PlanLimitException(
+                "Too many files: $maxBatch per conversion on your plan." +
+                    if (user.plan != UserPlan.PREMIUM) " Upgrade to Pro for bigger batches." else "",
+                details = mapOf("maxBatchFiles" to maxBatch),
+            )
+        }
 
         val resolved = ids.map { id ->
             files.findByIdAndUserIdAndActiveTrue(id, user.id!!).orElse(null)

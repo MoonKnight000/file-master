@@ -9,4 +9,8 @@ data class UserLimits(
     val batchConvert: Boolean,
     val retentionMinutes: Long,
     val dailyConversions: Int? = null,
+    /** Max input files in one conversion job. */
+    val maxBatchFiles: Int,
+    /** How long uploaded source files are kept (results follow [retentionMinutes]). */
+    val uploadRetentionMinutes: Long,
 )

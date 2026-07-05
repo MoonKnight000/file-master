@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import uz.murodjon.filemaster.auth.dto.GoogleSignInRequest
 import uz.murodjon.filemaster.auth.dto.LoginRequest
+import uz.murodjon.filemaster.auth.dto.RefreshRequest
 import uz.murodjon.filemaster.auth.dto.RegisterRequest
 import uz.murodjon.filemaster.auth.dto.SessionRequest
 import uz.murodjon.filemaster.auth.dto.SessionResponse
@@ -38,6 +39,13 @@ interface AuthController {
     @PostMapping("/google")
     fun google(
         @RequestBody @Valid request: GoogleSignInRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<ResponseData<SessionResponse>>
+
+    @PostMapping("/refresh")
+    fun refresh(
+        @RequestBody(required = false) body: RefreshRequest?,
+        request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<ResponseData<SessionResponse>>
 

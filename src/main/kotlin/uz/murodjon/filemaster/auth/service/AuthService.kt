@@ -23,6 +23,12 @@ interface AuthService {
      *  the current guest in place when there is one, then issues a session. */
     fun loginWithGoogle(request: GoogleSignInRequest): IssuedSession
 
+    /**
+     * Rotates the token pair behind [refreshToken]: issues a new access+refresh pair and
+     * invalidates the old one. Throws [UnauthenticatedException] when unknown/expired.
+     */
+    fun refresh(refreshToken: String?): IssuedSession
+
     /** Ends the session behind [token] (no-op if it doesn't exist). */
     fun logout(token: String?)
 

@@ -1,13 +1,13 @@
-package uz.murodjon.filemaster.tools.service.impl
+package uz.murodjon.filemaster.video.service.impl
 
 import org.springframework.stereotype.Service
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
 import uz.murodjon.filemaster.tools.enums.ToolGroup
-import uz.murodjon.filemaster.tools.service.DocumentToolService
 import uz.murodjon.filemaster.tools.service.ToolProvider
+import uz.murodjon.filemaster.video.service.VideoToolService
 
 @Service
-class DocumentToolServiceImpl(private val provider: ToolProvider) : DocumentToolService {
+class VideoToolServiceImpl(private val provider: ToolProvider) : VideoToolService {
     override fun list(): ToolListResponse =
-        ToolListResponse(provider.byGroup(ToolGroup.DOCUMENT))
+        ToolListResponse(provider.byGroup(ToolGroup.VIDEO))
 }

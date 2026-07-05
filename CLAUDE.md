@@ -29,8 +29,10 @@ endpoint, enum or DTO change), record it in the front-end repo:
   ./gradlew compileTestKotlin assemble   # full build
   ./gradlew bootRun              # start the app
   ```
-- **Server port: 7788.** `GET /v1/tools/**`, `POST /v1/auth/session`, swagger and
-  `/actuator/health` are public; everything else needs `Authorization: Bearer <token>`.
+- **Server port: 7788.** `GET /v1/tools/**`, `POST /v1/auth/**` (incl. `/refresh`), swagger
+  and `/actuator/health` are public; everything else needs `Authorization: Bearer <token>`
+  (opaque ACCESS token, 60 min; renew via `POST /v1/auth/refresh` with the 30-day rotating
+  refresh token; DB stores only SHA-256 hashes — see `auth/model/Session`).
 - Local **Postgres** (`filemaster` db, `ddl-auto=update`) must be running; MinIO is remote.
   On startup `ToolSeeder` upserts the tool catalog (log: "Tool catalog seeded: N …").
 - A stale app holding port 7788 (e.g. an IntelliJ run) makes a new `bootRun` silently
@@ -50,9 +52,11 @@ The full architecture spec lives in `docs/ARCHITECTURE.md` — keep it in sync. 
    the **interface**. The impl is a bare `@RestController` (NO `@RequestMapping`) and its
    overrides carry NO annotations — Spring 6+ merges them from the interface. Controllers
    are thin and only delegate.
-3. **Services = `interface XxxService` in `service/` + a single `class XxxServiceImpl` in
-   `service/impl/`.** ALL business logic lives in the service, never the controller. Same
-   split for storage (`storage/StorageService` + `storage/impl/MinioStorageService`).
+3. **Services = `interface XxxService` in `service/` + `class XxxServiceImpl`.** The impl
+   goes in `service/impl/` ONLY when the service package has 2+ interfaces; with a single
+   interface the impl sits directly in `service/` (no `impl/` folder) — e.g.
+   `mail/service/LogMailService`, `storage/MinioStorageService`. ALL business logic lives
+   in the service, never the controller.
 4. **Every endpoint returns `ResponseEntity<ResponseData<T>>`** (the `util/ResponseData`
    success envelope). All paths start with `/v1/` (never `/api/`).
 5. **One class per file (STRICT):** every top-level class/interface/enum/data class in its
@@ -102,6 +106,9 @@ The catalog lives in the `tools` table, not in code:
 
 Engines in `conversion/engine/` selected by `ToolEngine`: LibreOffice (docs), ffmpeg
 (audio/video/convert-image), pure-Java ImageIO (compress-image), Ghostscript (compress-pdf),
-Tesseract (ocr), PDFBox (merge-pdf), java.util.zip (unzip). External tool paths are ABSOLUTE
-in `application.properties` (the app inherits a stale PATH). Conversion runs async via
+Tesseract (ocr), PDFBox (merge-pdf), java.util.zip (unzip), in-JVM ONNX Runtime + u2net
+(remove-background), whisper.cpp CLI (audio-to-text). External tool paths are ABSOLUTE
+in `application.properties` (the app inherits a stale PATH). AI model files live OUTSIDE
+the repo in `C:/Users/Surface PC/file-master-models/` (u2net.onnx, ggml-small.bin,
+whisper/Release/whisper-cli.exe) — paths in `app.tools.*`. Conversion runs async via
 `ConversionWorker`, progress streamed over SSE.

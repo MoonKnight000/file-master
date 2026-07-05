@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.config
+package uz.murodjon.filemaster.security.config
 
 data class CorsProperties(
     /** Comma-separated list of allowed origins. */

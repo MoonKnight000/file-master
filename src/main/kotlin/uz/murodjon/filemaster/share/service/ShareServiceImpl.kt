@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.share.service.impl
+package uz.murodjon.filemaster.share.service
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

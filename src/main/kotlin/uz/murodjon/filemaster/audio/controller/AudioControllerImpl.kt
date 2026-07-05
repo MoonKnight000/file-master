@@ -8,7 +8,7 @@ import uz.murodjon.filemaster.audio.dto.AudioConvertRequest
 import uz.murodjon.filemaster.conversion.dto.JobDto
 import uz.murodjon.filemaster.audio.service.AudioConversionService
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
-import uz.murodjon.filemaster.tools.service.AudioToolService
+import uz.murodjon.filemaster.audio.service.AudioToolService
 import uz.murodjon.filemaster.util.ResponseData
 
 @RestController

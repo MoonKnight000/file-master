@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.tools.service
+package uz.murodjon.filemaster.image.service
 
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
 

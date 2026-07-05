@@ -33,6 +33,7 @@ class AudioConversionJob(
     var fadeInSeconds: Double? = null,
     var fadeOutSeconds: Double? = null,
     var reverseAudio: Boolean = false,
+    var transcribeLanguage: String? = null,
 ) : ConversionJob(user, tool, outputFormat, quality, keepOriginal, mergeIntoOne) {
 
     override fun toSettings(): ConversionSettings = super.toSettings().copy(
@@ -47,5 +48,6 @@ class AudioConversionJob(
         fadeInSeconds = fadeInSeconds,
         fadeOutSeconds = fadeOutSeconds,
         reverseAudio = reverseAudio,
+        transcribeLanguage = transcribeLanguage,
     )
 }

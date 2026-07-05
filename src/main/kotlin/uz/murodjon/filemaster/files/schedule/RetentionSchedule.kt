@@ -5,6 +5,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uz.murodjon.filemaster.auth.enums.UserPlan
+import uz.murodjon.filemaster.common.JobStatus
 import uz.murodjon.filemaster.config.AppProperties
 import uz.murodjon.filemaster.files.enums.FileSource
 import uz.murodjon.filemaster.files.model.StoredFile
@@ -36,6 +37,27 @@ class RetentionSchedule(
             if (expired.isNotEmpty()) {
                 sweep(expired, now)
                 log.info("Retention: removed {} expired result file(s) for plan {}.", expired.size, plan)
+            }
+        }
+    }
+
+    /**
+     * Every 10 minutes (90 s after startup). Uploaded source files get their own, longer
+     * window (`app.limits.upload-retention-minutes[-premium]`); an upload still referenced
+     * by a QUEUED/PROCESSING job is never swept, however old.
+     */
+    @Scheduled(fixedDelay = 10 * 60 * 1000, initialDelay = 90 * 1000)
+    @Transactional
+    fun cleanupExpiredUploads() {
+        val now = Instant.now().epochSecond
+        UserPlan.entries.forEach { plan ->
+            val cutoff = now - props.limits.uploadRetentionMinutesFor(plan) * 60
+            val expired = files.findExpiredUnreferencedForPlan(
+                FileSource.UPLOAD, cutoff, plan, listOf(JobStatus.QUEUED, JobStatus.PROCESSING),
+            )
+            if (expired.isNotEmpty()) {
+                sweep(expired, now)
+                log.info("Retention: removed {} expired upload(s) for plan {}.", expired.size, plan)
             }
         }
     }

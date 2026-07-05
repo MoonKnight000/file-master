@@ -53,7 +53,9 @@ enum class ToolSlug(@get:JsonValue val slug: String) {
     VOLUME_AUDIO("volume-audio"),
     FADE_AUDIO("fade-audio"),
     REVERSE_AUDIO("reverse-audio"),
-    NORMALIZE_AUDIO("normalize-audio");
+    NORMALIZE_AUDIO("normalize-audio"),
+    REMOVE_BACKGROUND("remove-background"),
+    AUDIO_TO_TEXT("audio-to-text");
 
     companion object {
         @JsonCreator

@@ -16,4 +16,5 @@ data class AudioConvertOptions(
     val speedFactor: Double? = null,    // speed-audio: 0.25..4
     val fadeInSeconds: Double? = null,  // fade-audio
     val fadeOutSeconds: Double? = null, // fade-audio
+    val language: String? = null,       // audio-to-text: ISO-639 code ("uz", "en", ...) or "auto"
 )

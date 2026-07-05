@@ -8,7 +8,7 @@ import uz.murodjon.filemaster.conversion.dto.JobDto
 import uz.murodjon.filemaster.video.dto.VideoConvertRequest
 import uz.murodjon.filemaster.video.service.VideoConversionService
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
-import uz.murodjon.filemaster.tools.service.VideoToolService
+import uz.murodjon.filemaster.video.service.VideoToolService
 import uz.murodjon.filemaster.util.ResponseData
 
 @RestController

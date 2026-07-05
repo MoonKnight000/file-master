@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import uz.murodjon.filemaster.auth.enums.UserPlan
+import uz.murodjon.filemaster.common.JobStatus
 import uz.murodjon.filemaster.files.enums.FileSource
 import uz.murodjon.filemaster.files.model.StoredFile
 import java.util.Optional
@@ -52,5 +53,21 @@ interface StoredFileRepository : JpaRepository<StoredFile, Long>, JpaSpecificati
         source: FileSource,
         cutoff: Long,
         plan: UserPlan,
+    ): List<StoredFile>
+
+    /**
+     * Expired files of [source] for owners on [plan] that no unfinished job still needs —
+     * used to sweep old UPLOADs without pulling inputs out from under a queued/processing job.
+     */
+    @Query(
+        "select f from StoredFile f where f.source = :source and f.active = true " +
+            "and f.createdTimestamp < :cutoff and f.user.plan = :plan " +
+            "and not exists (select jf from JobFile jf where jf.upload = f and jf.job.status in :busyStatuses)",
+    )
+    fun findExpiredUnreferencedForPlan(
+        source: FileSource,
+        cutoff: Long,
+        plan: UserPlan,
+        busyStatuses: List<JobStatus>,
     ): List<StoredFile>
 }

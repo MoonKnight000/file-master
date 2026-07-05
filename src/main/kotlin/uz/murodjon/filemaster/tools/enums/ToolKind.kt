@@ -14,4 +14,5 @@ enum class ToolKind(@get:JsonValue val value: String) {
     UNZIP("unzip"),
     OCR("ocr"),
     EDIT("edit"),
+    TRANSCRIBE("transcribe"),
 }

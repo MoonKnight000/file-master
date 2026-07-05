@@ -14,5 +14,7 @@ enum class ToolEngine {
     PDF_EDIT,     // rotate / split PDF pages (PDFBox)
     ZIP_CREATE,   // pack several files into one .zip (pure Java)
     DJVU,         // convert DjVu to PDF (external `ddjvu` from DjVuLibre)
+    BG_REMOVE,    // AI background removal (in-JVM ONNX Runtime + u2net model)
+    TRANSCRIBE,   // speech-to-text (external whisper.cpp CLI + ggml model)
     NONE,         // catalog-only / not wired yet
 }

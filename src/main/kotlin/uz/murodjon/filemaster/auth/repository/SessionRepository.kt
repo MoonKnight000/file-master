@@ -7,8 +7,13 @@ import java.util.Optional
 
 @Repository
 interface SessionRepository : JpaRepository<Session, Long> {
-    fun findByToken(token: String): Optional<Session>
+    fun findByTokenHash(tokenHash: String): Optional<Session>
+
+    fun findByRefreshTokenHash(refreshTokenHash: String): Optional<Session>
 
     /** Ends every session of a user (used when deleting the account). */
     fun deleteByUserId(userId: Long): Long
+
+    /** Sweeps rows whose refresh window has passed — used by the hourly session cleanup. */
+    fun deleteByRefreshExpiresTimestampLessThan(cutoff: Long): Long
 }

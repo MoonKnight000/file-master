@@ -8,7 +8,7 @@ import uz.murodjon.filemaster.document.dto.DocumentConvertRequest
 import uz.murodjon.filemaster.conversion.dto.JobDto
 import uz.murodjon.filemaster.document.service.DocumentConversionService
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
-import uz.murodjon.filemaster.tools.service.DocumentToolService
+import uz.murodjon.filemaster.document.service.DocumentToolService
 import uz.murodjon.filemaster.util.ResponseData
 
 @RestController

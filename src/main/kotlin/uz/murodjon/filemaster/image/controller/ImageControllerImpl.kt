@@ -8,7 +8,7 @@ import uz.murodjon.filemaster.image.dto.ImageConvertRequest
 import uz.murodjon.filemaster.conversion.dto.JobDto
 import uz.murodjon.filemaster.image.service.ImageConversionService
 import uz.murodjon.filemaster.tools.dto.ToolListResponse
-import uz.murodjon.filemaster.tools.service.ImageToolService
+import uz.murodjon.filemaster.image.service.ImageToolService
 import uz.murodjon.filemaster.util.ResponseData
 
 @RestController

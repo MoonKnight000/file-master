@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 import uz.murodjon.filemaster.auth.dto.GoogleSignInRequest
 import uz.murodjon.filemaster.auth.dto.IssuedSession
 import uz.murodjon.filemaster.auth.dto.LoginRequest
+import uz.murodjon.filemaster.auth.dto.RefreshRequest
 import uz.murodjon.filemaster.auth.dto.RegisterRequest
 import uz.murodjon.filemaster.auth.dto.SessionRequest
 import uz.murodjon.filemaster.auth.dto.SessionResponse
@@ -59,6 +60,18 @@ class AuthControllerImpl(
         return ResponseEntity.ok(ResponseData(issued.toResponse()))
     }
 
+    override fun refresh(
+        body: RefreshRequest?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<ResponseData<SessionResponse>> {
+        val refreshToken = body?.refreshToken?.takeIf { it.isNotBlank() }
+            ?: request.cookies?.firstOrNull { it.name == SessionCookies.REFRESH }?.value
+        val issued = authService.refresh(refreshToken)
+        writeSessionCookies(response, issued)
+        return ResponseEntity.ok(ResponseData(issued.toResponse()))
+    }
+
     override fun logout(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -69,8 +82,10 @@ class AuthControllerImpl(
     }
 
     private fun writeSessionCookies(response: HttpServletResponse, issued: IssuedSession) {
-        val ttl = (issued.expiresTimestamp - Instant.now().epochSecond).coerceAtLeast(0)
-        SessionCookies.forUser(issued.token, ttl, issued.user.guest).forEach {
+        val now = Instant.now().epochSecond
+        val ttl = (issued.expiresTimestamp - now).coerceAtLeast(0)
+        val refreshTtl = (issued.refreshExpiresTimestamp - now).coerceAtLeast(0)
+        SessionCookies.forUser(issued.token, ttl, issued.refreshToken, refreshTtl, issued.user.guest).forEach {
             response.addHeader(HttpHeaders.SET_COOKIE, it.toString())
         }
     }
@@ -78,6 +93,8 @@ class AuthControllerImpl(
     private fun IssuedSession.toResponse() = SessionResponse(
         token = token,
         expiresTimestamp = expiresTimestamp,
+        refreshToken = refreshToken,
+        refreshExpiresTimestamp = refreshExpiresTimestamp,
         user = SessionUser(user.id!!, user.guest),
     )
 

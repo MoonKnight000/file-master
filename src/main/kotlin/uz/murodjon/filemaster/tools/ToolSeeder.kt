@@ -419,5 +419,19 @@ class ToolSeeder(private val tools: ToolRepository) : ApplicationRunner {
             outputFormats = listOf(FileFormat.MP3, FileFormat.WAV, FileFormat.FLAC, FileFormat.AAC, FileFormat.M4A, FileFormat.OGG),
             defaultFormat = FileFormat.MP3, engine = ToolEngine.FFMPEG, kind = ToolKind.EDIT,
             editOperation = EditOperation.NORMALIZE),
+
+        // ── AI tools (2026-07-04) ────────────────────────────────────────────────────────────
+
+        ToolDef("remove-background", "Remove Background", "Erase the background from any photo with AI.",
+            CategoryToken.IMAGE, "eraser", ToolBadge.NEW,
+            accept = listOf(".png", ".jpg", ".jpeg"),
+            outputFormats = listOf(FileFormat.PNG),
+            defaultFormat = FileFormat.PNG, engine = ToolEngine.BG_REMOVE),
+
+        ToolDef("audio-to-text", "Audio to Text", "Transcribe speech into text, SRT or VTT with AI.",
+            CategoryToken.AUDIO, "mic", ToolBadge.NEW,
+            accept = listOf(".mp3", ".wav", ".flac", ".aac", ".m4a", ".ogg", ".wma"),
+            outputFormats = listOf(FileFormat.TXT, FileFormat.SRT, FileFormat.VTT),
+            defaultFormat = FileFormat.TXT, engine = ToolEngine.TRANSCRIBE, kind = ToolKind.TRANSCRIBE),
     )
 }

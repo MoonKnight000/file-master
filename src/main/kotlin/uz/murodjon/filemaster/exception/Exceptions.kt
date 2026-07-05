@@ -34,6 +34,7 @@ class ForbiddenException(
 // --- 403 PLAN_LIMIT ---
 class PlanLimitException(
     message: String,
+    override val details: Map<String, Any?>? = null,
 ) : BaseException(message) {
     override val code = ExcCode.PLAN_LIMIT
 }

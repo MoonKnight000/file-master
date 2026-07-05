@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.config
+package uz.murodjon.filemaster.storage.config
 
 data class StorageProperties(
     val endpoint: String,

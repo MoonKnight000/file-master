@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.storage.impl
+package uz.murodjon.filemaster.storage
 
 import io.minio.*
 import jakarta.annotation.PostConstruct

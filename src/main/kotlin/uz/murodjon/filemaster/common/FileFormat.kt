@@ -33,6 +33,9 @@ enum class FileFormat(@get:JsonValue val value: String) {
     MOV("MOV"),
     WEBM("WEBM"),
     MKV("MKV"),
+    // Subtitles / transcripts
+    SRT("SRT"),
+    VTT("VTT"),
     // Archive
     ZIP("ZIP");
 

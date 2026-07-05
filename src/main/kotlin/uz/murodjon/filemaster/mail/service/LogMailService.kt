@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.mail.service.impl
+package uz.murodjon.filemaster.mail.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

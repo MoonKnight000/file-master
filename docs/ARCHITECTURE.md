@@ -24,19 +24,21 @@ Har bir biznes-modul `uz.murodjon.filemaster.<modul>` paketi ostida quyidagicha:
 ```
 
 Modulga xos qo'shimcha paketlarga ruxsat bor (mavjudlari):
-- `conversion/engine/` — tashqi vositalar (ffmpeg, LibreOffice, ...) bilan ishlaydigan converterlar
+- `conversion/engine/` — tashqi vositalar (ffmpeg, LibreOffice, whisper.cpp, ...) va
+  in-JVM modellar (ONNX u2net — remove-background) bilan ishlaydigan converterlar
 - `conversion/processor/` — kategoriya-processorlar + `ConversionSupport`
-- `files/schedule/`, `billing/schedule/` — @Scheduled joblar
+- `files/schedule/`, `billing/schedule/`, `conversion/schedule/`, `auth/schedule/` — @Scheduled joblar
 - `auth/security/` — auth domeniga oid web-glue (`@CurrentUser` resolver, cookie helper, 401/403 handlerlar)
+- `<modul>/config/` — o'sha feature'ning `*Properties` data classi (8-qoidaga qarang)
 
 ### Modullar ro'yxati va vazifasi
 
 | Modul | Vazifa |
 |---|---|
-| `auth` | sessiya/ro'yxat/login/Google, `/v1/me`, profil |
+| `auth` | sessiya (access 60min + rotating refresh 30 kun, DB'da faqat SHA-256 hash), ro'yxat/login/Google, `/v1/me`, profil, `SessionCleanupSchedule` |
 | `files` | yagona fayl entity (`StoredFile`), upload, "My files", retention |
 | `conversion` | jobs, worker, SSE, enginelar — kategoriya-agnostik yadro |
-| `audio` / `video` / `image` / `document` / `archive` | kategoriya-endpointlar (`/v1/{group}/conversions`), option-validatsiya, per-kategoriya job subclasslari. **Hujjat moduli `document`, `pdf` EMAS** |
+| `audio` / `video` / `image` / `document` / `archive` | kategoriya-endpointlar (`/v1/{group}/conversions` va `/v1/{group}/tools` — `XxxToolService` ham shu modulda), option-validatsiya, per-kategoriya job subclasslari. **Hujjat moduli `document`, `pdf` EMAS** |
 | `tools` | DB-backed tool katalogi, seeder, SEO kontent (`ToolSeo`) |
 | `share` | ommaviy share-linklar (create/info/download/revoke) |
 | `search` | header qidiruv (toollar + fayllar) |
@@ -45,7 +47,7 @@ Modulga xos qo'shimcha paketlarga ruxsat bor (mavjudlari):
 | `storage` | `StorageService` interface + `impl/MinioStorageService` |
 | `security` | HTTP security zanjiri (`SecurityConfig`, token filter) |
 | `exception` | `ExcCode`, `BaseException`, konkret exceptionlar, global handler |
-| `config` | `@ConfigurationProperties` klasslar + Spring configlar |
+| `config` | root `AppProperties` + kesishuvchi `LimitsProperties` + Spring `*Config`lar (feature Properties'lar o'z modulida) |
 | `common` / `util` / `pageable` | domen-umumiy enumlar / javob konvertlari / sahifalash |
 
 ## 2. Qat'iy qoidalar
@@ -55,8 +57,11 @@ Modulga xos qo'shimcha paketlarga ruxsat bor (mavjudlari):
 2. **Controller interface'ida** mapping/param annotatsiyalari; **Impl'da hech qanday
    annotatsiya yo'q** (faqat `@RestController`). Impl faqat service'ga delegatsiya qiladi —
    if/else ham yozilmaydi.
-3. **Service interface `service/`da, Impl `service/impl/`da.** Controller Impl esa
-   `controller/`ning o'zida (alohida `impl/` YO'Q — service bilan adashtirmang).
+3. **Service interface `service/`da, Impl `service/impl/`da** — LEKIN service package'da
+   FAQAT BITTA interfeys bo'lsa, `impl/` ochilmaydi: Impl ham `service/`ning o'zida turadi
+   (masalan `mail/service/LogMailService`, `search/service/SearchServiceImpl`,
+   `storage/MinioStorageService`). Ikkinchi interfeys paydo bo'lgach Impl'lar `impl/`ga
+   tushadi. Controller Impl esa har doim `controller/`ning o'zida (alohida `impl/` YO'Q).
 4. **Har bir JSON endpoint** `ResponseEntity<ResponseData<T>>` qaytaradi; barcha yo'llar
    `/v1/` bilan boshlanadi. Binary/SSE bundan mustasno.
 5. **Enumlarni DTOda `String`ga qo'lda yoymang** — enum maydonni to'g'ridan-to'g'ri
@@ -67,8 +72,13 @@ Modulga xos qo'shimcha paketlarga ruxsat bor (mavjudlari):
    boolean bilan; repositorylar `...ActiveTrue...` filtrlaydi.
 7. **Exception pattern:** har xato turi uchun alohida class + `ExcCode` yozuvi.
    Factory-metodli yagona exception TAQIQLANGAN.
-8. **Konfiguratsiya:** yangi sozlama = `config/`dagi tegishli `*Properties` data class
-   maydoni + `application.properties`da `app.*` kaliti (env override bilan).
+8. **Konfiguratsiya:** yangi sozlama = tegishli `*Properties` data class maydoni +
+   `application.properties`da `app.*` kaliti (env override bilan). Feature'ga tegishli
+   `*Properties` o'z modulining `config/` subpackage'ida turadi
+   (`billing/config/BillingProperties`, `auth/config/GoogleProperties`,
+   `storage/config/StorageProperties`, `security/config/CorsProperties`,
+   `conversion/config/ToolsProperties`); top-level `config/`da faqat root `AppProperties`,
+   kesishuvchi `LimitsProperties` va `*Config` (bean wiring) klasslar qoladi.
 
 ## 3. Qatlamlar orasidagi oqim
 
@@ -88,8 +98,12 @@ HTTP → Controller(interface) → ControllerImpl → Service(interface) → Ser
 - **Kvota/limitlar:** yagona nuqta — `ConversionServiceImpl.submit` (kunlik kvota) va
   `FilesServiceImpl.upload` (hajm). Yangi kategoriya qo'shsangiz avtomatik qamrab olinadi,
   chunki hammasi `ConversionService.submit`dan o'tadi.
-- **Retention:** plan-ga bog'liq (`LimitsProperties.retentionMinutesFor`); tozalash
-  `files/schedule/RetentionSchedule`, plan muddati `billing/schedule/PlanExpirySchedule`.
+- **Retention:** plan-ga bog'liq (`LimitsProperties.retentionMinutesFor` — natijalar,
+  `uploadRetentionMinutesFor` — uploadlar); tozalash `files/schedule/RetentionSchedule`
+  (ishlayotgan jobga bog'langan upload o'chirilmaydi), plan muddati
+  `billing/schedule/PlanExpirySchedule`. Zombie/stale joblar (`server restart yoki
+  stale-job-minutes`dan oshgan) `conversion/schedule/StaleJobSchedule`da FAILED qilinadi,
+  eski scratch-dirlar ham o'sha yerda startupda tozalanadi.
 - **Email:** faqat `mail/service/MailService` orqali; chaqiruvlar `runCatching` bilan
   o'ralgan — xat yuborilmasa job yiqilmaydi.
 - **API o'zgarsa:** `file-master-front/docs/API.md`ni yangilang + o'sha sessiyaning

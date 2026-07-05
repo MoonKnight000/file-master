@@ -34,6 +34,8 @@ data class ConversionOptions(
     val targetBytes: Long? = null,
     // OCR language code(s) e.g. "eng", "rus", "uzb".
     val ocrLanguage: String? = null,
+    // Transcription language for audio-to-text: ISO-639 code ("uz", "en", ...) or "auto".
+    val language: String? = null,
     // PDF page edits (delete/extract: flat "2,5-7" selection, ONE output; reorder: "3,1,2").
     val pageRanges: String? = null,
     val pageOrder: String? = null,

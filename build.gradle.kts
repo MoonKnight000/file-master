@@ -35,6 +35,8 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    // In-JVM inference for remove-background (u2net); CPU execution provider.
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.20.0")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")

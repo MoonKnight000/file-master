@@ -21,6 +21,7 @@ import uz.murodjon.filemaster.auth.repository.SessionRepository
 import uz.murodjon.filemaster.auth.repository.UserRepository
 import uz.murodjon.filemaster.auth.service.AuthService
 import uz.murodjon.filemaster.auth.service.GoogleTokenVerifier
+import uz.murodjon.filemaster.common.Hashing
 import uz.murodjon.filemaster.common.Ids
 import uz.murodjon.filemaster.config.AppProperties
 import uz.murodjon.filemaster.auth.enums.UserPlan
@@ -44,12 +45,6 @@ class AuthServiceImpl(
     private val props: AppProperties,
 ) : AuthService {
 
-    private val sessionTtlSeconds = 24 * 60 * 60L
-
-    private companion object {
-        /** Guest sliding-expiration renewals are written at most this often per session. */
-        const val RENEW_THROTTLE_SECONDS = 3600L
-    }
 
     @Transactional
     override fun createGuestSession(): IssuedSession {
@@ -117,32 +112,35 @@ class AuthServiceImpl(
     }
 
     @Transactional
-    override fun logout(token: String?) {
-        val raw = token?.removePrefix("Bearer ")?.trim()?.takeIf { it.isNotEmpty() } ?: return
-        sessions.findByToken(raw).ifPresent { sessions.delete(it) }
+    override fun refresh(refreshToken: String?): IssuedSession {
+        val raw = refreshToken?.trim()?.takeIf { it.isNotEmpty() }
+            ?: throw UnauthenticatedException("Refresh token is required.")
+        val session = sessions.findByRefreshTokenHash(Hashing.sha256Hex(raw)).orElse(null)
+            ?: throw UnauthenticatedException("Invalid refresh token.")
+        if (session.refreshExpiresTimestamp < Instant.now().epochSecond) {
+            throw UnauthenticatedException("Refresh token expired.")
+        }
+        return rotate(session)
     }
 
     @Transactional
+    override fun logout(token: String?) {
+        val raw = token?.removePrefix("Bearer ")?.trim()?.takeIf { it.isNotEmpty() } ?: return
+        sessions.findByTokenHash(Hashing.sha256Hex(raw)).ifPresent { sessions.delete(it) }
+    }
+
+    @Transactional(readOnly = true)
     override fun requireUser(bearer: String?): User {
         val token = bearer?.removePrefix("Bearer ")?.trim()
             ?.takeIf { it.isNotEmpty() }
             ?: throw UnauthenticatedException()
-        val session = sessions.findByToken(token).orElse(null)
+        val session = sessions.findByTokenHash(Hashing.sha256Hex(token)).orElse(null)
             ?: throw UnauthenticatedException()
-        val now = Instant.now().epochSecond
-        if (session.expiresTimestamp < now) {
+        if (session.expiresTimestamp < Instant.now().epochSecond) {
             throw UnauthenticatedException("Session expired.")
         }
-        // Sliding expiration for guests: any authenticated request pushes the TTL window
-        // forward so an active guest never silently loses the session (and with it the
-        // files). Throttled to one DB write per hour per session.
-        if (session.user.guest) {
-            val renewed = now + sessionTtlSeconds
-            if (renewed - session.expiresTimestamp > RENEW_THROTTLE_SECONDS) {
-                session.expiresTimestamp = renewed
-                sessions.save(session)
-            }
-        }
+        // No sliding here: refresh rotation renews the window, so active users (guests
+        // included) stay signed in without a DB write on the hot path.
         return session.user
     }
 
@@ -224,6 +222,8 @@ class AuthServiceImpl(
                 batchConvert = pro || props.limits.freeBatchConvert,
                 retentionMinutes = retentionMinutes,
                 dailyConversions = props.limits.dailyConversionLimit(guest, plan),
+                maxBatchFiles = props.limits.maxBatchFilesFor(plan),
+                uploadRetentionMinutes = props.limits.uploadRetentionMinutesFor(plan),
             ),
             usage = UserUsage(
                 fileCount = files.countByUserIdAndActiveTrue(userId),
@@ -236,10 +236,38 @@ class AuthServiceImpl(
     }
 
     private fun issue(user: User): IssuedSession {
-        val expiresTimestamp = Instant.now().epochSecond + sessionTtlSeconds
+        val now = Instant.now().epochSecond
         val token = Ids.token()
-        sessions.save(Session(token = token, user = user, expiresTimestamp = expiresTimestamp))
-        return IssuedSession(token, expiresTimestamp, user)
+        val refreshToken = Ids.token()
+        val expiresTimestamp = now + props.auth.accessTtlSeconds
+        val refreshExpiresTimestamp = now + props.auth.refreshTtlSeconds
+        sessions.save(
+            Session(
+                tokenHash = Hashing.sha256Hex(token),
+                refreshTokenHash = Hashing.sha256Hex(refreshToken),
+                user = user,
+                expiresTimestamp = expiresTimestamp,
+                refreshExpiresTimestamp = refreshExpiresTimestamp,
+            ),
+        )
+        return IssuedSession(token, expiresTimestamp, refreshToken, refreshExpiresTimestamp, user)
+    }
+
+    /**
+     * Rotation: overwrites BOTH hashes on the existing row, so the previous access and
+     * refresh tokens die instantly and the refresh window slides forward — an active user
+     * (guest included) never gets logged out, a stolen old pair is useless.
+     */
+    private fun rotate(session: Session): IssuedSession {
+        val now = Instant.now().epochSecond
+        val token = Ids.token()
+        val refreshToken = Ids.token()
+        session.tokenHash = Hashing.sha256Hex(token)
+        session.refreshTokenHash = Hashing.sha256Hex(refreshToken)
+        session.expiresTimestamp = now + props.auth.accessTtlSeconds
+        session.refreshExpiresTimestamp = now + props.auth.refreshTtlSeconds
+        sessions.save(session)
+        return IssuedSession(token, session.expiresTimestamp, refreshToken, session.refreshExpiresTimestamp, session.user)
     }
 
     private fun currentPrincipal(): User? =

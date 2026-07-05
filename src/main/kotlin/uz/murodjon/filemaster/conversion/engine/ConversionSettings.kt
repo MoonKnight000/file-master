@@ -40,6 +40,8 @@ data class ConversionSettings(
     val targetBytes: Long? = null,
     // OCR: Tesseract language code(s), e.g. "eng", "rus+uzb". null = tesseract default (eng).
     val ocrLanguage: String? = null,
+    // Transcription (whisper): ISO-639 code ("uz", "en", ...) or "auto"; null = auto-detect.
+    val transcribeLanguage: String? = null,
     // PDF page edits. pageRanges is a flat selection ("2,5-7") producing ONE output —
     // unlike splitRanges, which groups pages into MULTIPLE output PDFs.
     val pageRanges: String? = null,      // delete-pdf-pages / extract-pdf-pages

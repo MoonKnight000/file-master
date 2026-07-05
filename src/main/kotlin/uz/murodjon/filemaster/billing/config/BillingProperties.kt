@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.config
+package uz.murodjon.filemaster.billing.config
 
 data class BillingProperties(
     /**

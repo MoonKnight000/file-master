@@ -1,9 +1,7 @@
-package uz.murodjon.filemaster.files.service.impl
+package uz.murodjon.filemaster.files.service
 
 import org.springframework.stereotype.Service
 import uz.murodjon.filemaster.common.CategoryToken
-import uz.murodjon.filemaster.files.service.DimensionProbe
-import uz.murodjon.filemaster.files.service.FilesService
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import uz.murodjon.filemaster.auth.model.User

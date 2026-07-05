@@ -1,4 +1,4 @@
-package uz.murodjon.filemaster.search.service.impl
+package uz.murodjon.filemaster.search.service
 
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

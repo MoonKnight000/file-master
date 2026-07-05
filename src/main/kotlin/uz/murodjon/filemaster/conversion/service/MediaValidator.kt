@@ -43,6 +43,11 @@ class MediaValidator(private val catalog: ToolCatalog) {
                 throw ValidationException("trimEndSeconds must be greater than trimStartSeconds.")
             }
         }
+        opts.language?.let {
+            if (it != "auto" && !it.matches(Regex("^[a-z]{2,3}$"))) {
+                throw ValidationException("language must be an ISO-639 code (e.g. \"uz\", \"en\") or \"auto\".")
+            }
+        }
     }
 
     fun validateVideo(opts: ConversionOptions?, outputFormat: String, operation: EditOperation? = null) {

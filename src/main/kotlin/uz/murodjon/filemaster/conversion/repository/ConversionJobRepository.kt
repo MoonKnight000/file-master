@@ -24,6 +24,12 @@ interface ConversionJobRepository : JpaRepository<ConversionJob, Long> {
     /** Filtered by status list with dynamic sort from Pageable. */
     fun findByUserIdAndStatusIn(userId: Long, statuses: List<JobStatus>, pageable: Pageable): Page<ConversionJob>
 
+    /** All jobs currently in one of [statuses] — the startup zombie sweep. */
+    fun findByStatusIn(statuses: List<JobStatus>): List<ConversionJob>
+
+    /** Jobs stuck in one of [statuses] since before [cutoff] — the periodic stale-job reaper. */
+    fun findByStatusInAndCreatedTimestampLessThan(statuses: List<JobStatus>, cutoff: Long): List<ConversionJob>
+
     /** Moves every job of [guest] onto [target] — used when a guest logs into an existing account. */
     @Modifying
     @Query("update ConversionJob j set j.user = :target where j.user = :guest")
